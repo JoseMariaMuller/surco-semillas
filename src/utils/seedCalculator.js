@@ -4,9 +4,8 @@
 // semillas/ha = plantas/m² × 10.000 / (PG × logro)   (PG y logro como fracción)
 //
 // Ejemplo: trigo, 300 pl/m², PMS 38 g, PG 90 %, logro 85 % → ~149 kg/ha.
-
-export const BOLSA_KG = 40
-export const BOLSA_SEMILLAS = 80000
+//
+// Las bolsas dependen del cultivo (crop.bolsa): por kilos o por cantidad de semillas.
 
 export function kgPorHa({ plantas, pms, pg, logro }) {
   return (plantas * pms * 100) / (pg * logro)
@@ -17,24 +16,30 @@ export function semillasPorHa({ plantas, pg, logro }) {
 }
 
 /**
- * Devuelve kg/ha, kg totales y bolsas. El maíz se vende en bolsas de 80.000
- * semillas; el resto, en bolsas de 40 kg.
+ * Devuelve kg/ha, kg totales y bolsas. `bolsa` es la del cultivo:
+ * { tipo: 'kg', cantidad } o { tipo: 'semillas', cantidad }.
  */
-export function calcularSemilla({ cultivo, hectareas, plantas, pms, pg, logro }) {
+export function calcularSemilla({ bolsa, hectareas, plantas, pms, pg, logro }) {
   const kgHa = kgPorHa({ plantas, pms, pg, logro })
   const kgTotal = kgHa * hectareas
   const semHa = semillasPorHa({ plantas, pg, logro })
   const semTotal = semHa * hectareas
-  const porSemillas = cultivo === 'maiz'
-  const bolsas = porSemillas ? Math.ceil(semTotal / BOLSA_SEMILLAS) : Math.ceil(kgTotal / BOLSA_KG)
+  const total = bolsa.tipo === 'semillas' ? semTotal : kgTotal
   return {
     kgHa,
     kgTotal,
     semillasHa: semHa,
     semillasTotal: semTotal,
-    bolsas,
-    bolsa: porSemillas ? { tipo: 'semillas', cantidad: BOLSA_SEMILLAS } : { tipo: 'kg', cantidad: BOLSA_KG },
+    bolsas: Math.ceil(total / bolsa.cantidad),
+    bolsa,
   }
+}
+
+const miles = new Intl.NumberFormat('es-AR')
+
+/** "bolsas de 40 kg" o "bolsas de 180.000 semillas". */
+export function textoBolsa(bolsa) {
+  return `bolsas de ${miles.format(bolsa.cantidad)} ${bolsa.tipo === 'semillas' ? 'semillas' : 'kg'}`
 }
 
 const LIMITES = {

@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from 'react'
 import { CROP_LIST, CROPS, NOTA_VALORES } from '../../data/crops.js'
-import { aNumero, calcularSemilla, validarSemilla } from '../../utils/seedCalculator.js'
+import { aNumero, calcularSemilla, textoBolsa, validarSemilla } from '../../utils/seedCalculator.js'
 import styles from './Calculator.module.css'
 
 const fmt0 = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 })
@@ -66,18 +66,17 @@ export default function Calculator({ cropId, onCropChange, onUseInQuote }) {
   const result = useMemo(() => {
     if (!valid) return null
     return calcularSemilla({
-      cultivo: cropId,
+      bolsa: crop.bolsa,
       hectareas: aNumero(values.hectareas),
       plantas: aNumero(values.plantas),
       pms: aNumero(values.pms),
       pg: aNumero(values.pg),
       logro: aNumero(values.logro),
     })
-  }, [valid, cropId, values.hectareas, values.plantas, values.pms, values.pg, values.logro])
+  }, [valid, crop.bolsa, values.hectareas, values.plantas, values.pms, values.pg, values.logro])
 
   const reset = () => setEdits((e) => ({ ...e, [cropId]: undefined }))
-  const isMaize = cropId === 'maiz'
-  const bagText = isMaize ? 'bolsas de 80.000 semillas' : 'bolsas de 40 kg'
+  const bagText = textoBolsa(crop.bolsa)
 
   const useInQuote = () => {
     if (!result) return
@@ -169,7 +168,7 @@ export default function Calculator({ cropId, onCropChange, onUseInQuote }) {
                       {fmt0.format(result.kgTotal)} <span>kg</span>
                     </dd>
                   </div>
-                  {isMaize && (
+                  {crop.bolsa.tipo === 'semillas' && (
                     <div>
                       <dt>Semillas por hectárea</dt>
                       <dd className="num">{fmt0.format(result.semillasHa)}</dd>
