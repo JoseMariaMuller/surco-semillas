@@ -1,0 +1,10 @@
+.section {
+  padding-block: var(--s-9);
+  border-top: var(--borde);
+}
+
+.footer {
+  padding-block: var(--s-7);
+  background: var(--tierra);
+  color: var(--cielo);
+}

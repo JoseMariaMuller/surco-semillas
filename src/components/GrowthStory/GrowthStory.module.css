@@ -1,0 +1,36 @@
+.story {
+  position: relative;
+  height: calc(var(--stages) * 100svh);
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  background: #3b2a1e;
+}
+
+.hero {
+  position: absolute;
+  left: max(var(--s-5), calc((100vw - 90rem) / 2));
+  right: var(--s-5);
+  bottom: var(--s-8);
+  max-width: 44rem;
+  color: var(--cielo);
+}
+
+.title {
+  font-size: var(--t-hero);
+}
+
+.lead {
+  margin-top: var(--s-5);
+  font-size: var(--t-21);
+  line-height: 1.45;
+}
