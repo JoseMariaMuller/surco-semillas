@@ -180,10 +180,11 @@ time {
   transition: background-color 0.15s, color 0.15s;
 }
 
+/* rosa oscuro + blanco: 9,2:1 (el rosa claro con texto tierra no llega a AA) */
 .btn:hover {
-  background: var(--curasemilla);
-  border-color: var(--curasemilla);
-  color: var(--tierra);
+  background: var(--curasemilla-oscuro);
+  border-color: var(--curasemilla-oscuro);
+  color: var(--blanco);
 }
 
 .btn--ghost {
@@ -200,4 +201,94 @@ time {
 .wrap {
   width: min(100% - 2 * var(--s-5), var(--ancho));
   margin-inline: auto;
+}
+
+/* ---------- Secciones ---------- */
+.section {
+  padding-block: clamp(4rem, 9vw, 7rem);
+  border-top: var(--borde);
+}
+
+.section-head {
+  display: grid;
+  gap: var(--s-4);
+  margin-bottom: var(--s-7);
+}
+
+.section-head p {
+  font-size: var(--t-21);
+  line-height: 1.45;
+  max-width: 52ch;
+}
+
+/* ---------- Formularios ---------- */
+.field {
+  display: grid;
+  gap: var(--s-1);
+  align-content: start;
+}
+
+.field label,
+.field .label {
+  font-size: var(--t-14);
+  font-weight: 650;
+}
+
+.field .hint {
+  font-size: var(--t-14);
+  color: var(--tierra-80);
+}
+
+.input {
+  width: 100%;
+  min-height: 2.875rem;
+  padding: var(--s-2) var(--s-3);
+  border: var(--borde);
+  border-radius: var(--radio);
+  background: var(--blanco);
+  font-size: var(--t-17);
+  font-variant-numeric: tabular-nums;
+}
+
+textarea.input {
+  min-height: 7rem;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+select.input {
+  appearance: none;
+  padding-right: 2.25rem;
+  background-image: linear-gradient(45deg, transparent 50%, var(--tierra) 50%),
+    linear-gradient(135deg, var(--tierra) 50%, transparent 50%);
+  background-position: calc(100% - 1.15rem) 55%, calc(100% - 0.8rem) 55%;
+  background-size: 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+}
+
+.input:focus-visible {
+  outline-offset: 1px;
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--curasemilla-oscuro);
+  border-width: 2px;
+}
+
+.field-error {
+  display: flex;
+  gap: var(--s-2);
+  font-size: var(--t-14);
+  font-weight: 600;
+  color: var(--curasemilla-oscuro);
+}
+
+.field-error::before {
+  content: '';
+  flex: none;
+  width: 0.5rem;
+  height: 0.7rem;
+  margin-top: 0.4em;
+  border-radius: 50%;
+  background: var(--curasemilla);
 }

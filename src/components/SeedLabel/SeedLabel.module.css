@@ -1,0 +1,190 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 34rem);
+  gap: clamp(2rem, 6vw, 6rem);
+  align-items: start;
+}
+
+.intro {
+  position: sticky;
+  top: calc(var(--header-h) + var(--s-6));
+}
+
+/* En la ficha el selector va en dos filas de tres */
+.selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
+  max-width: 30rem;
+}
+
+.note {
+  margin-top: var(--s-5);
+  font-size: var(--t-14);
+  color: var(--tierra-80);
+}
+
+/* ---------- La bolsa: polipropileno tejido ---------- */
+.bag {
+  position: relative;
+  padding: 4.5rem clamp(1rem, 4vw, 2.25rem) clamp(1.5rem, 4vw, 2.5rem);
+  background-color: #f1efe6;
+  /* trama: hilos horizontales y verticales, apenas visibles */
+  background-image:
+    repeating-linear-gradient(0deg, rgb(43 31 23 / 0.06) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgb(43 31 23 / 0.05) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.5) 0 2px, transparent 2px 8px);
+  border-radius: 2px 2px var(--radio) var(--radio);
+  box-shadow: 0 1px 0 rgb(43 31 23 / 0.2), 0 18px 30px -24px rgb(43 31 23 / 0.6);
+}
+
+/* Costura en zigzag arriba */
+.stitch {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.75rem;
+  background:
+    linear-gradient(135deg, transparent 6px, var(--tierra) 6px 7.5px, transparent 7.5px) 0 50% / 12px 12px repeat-x,
+    linear-gradient(45deg, transparent 6px, var(--tierra) 6px 7.5px, transparent 7.5px) 0 50% / 12px 12px repeat-x,
+    #e7e3d6;
+  border-bottom: 1px solid rgb(43 31 23 / 0.2);
+  opacity: 0.85;
+}
+
+/* Ojal metálico */
+.eyelet {
+  position: absolute;
+  top: 2.35rem;
+  left: 50%;
+  margin-left: -0.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cielo) 0 34%, #8b9094 36% 56%, #c9cdcf 58% 72%, #7a7f83 74%);
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.3);
+}
+
+.label {
+  border: 2px solid var(--tierra);
+  background: rgb(255 255 255 / 0.55);
+}
+
+.brand {
+  padding: var(--s-2) var(--s-4);
+  background: var(--tierra);
+  color: var(--cielo);
+  font-weight: 800;
+  font-stretch: 125%;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Pestañas de variedades ---------- */
+.tabs {
+  display: flex;
+  border-bottom: 2px solid var(--tierra);
+}
+
+.tab {
+  flex: 1;
+  min-height: 2.75rem;
+  padding: var(--s-2) var(--s-3);
+  border: 0;
+  border-right: 1px solid var(--tierra);
+  background: transparent;
+  font-size: var(--t-14);
+  font-weight: 650;
+  text-align: left;
+}
+
+.tab:last-child {
+  border-right: 0;
+}
+
+.tab[aria-selected='true'] {
+  background: var(--espiga);
+  box-shadow: inset 0 -4px 0 var(--tierra);
+}
+
+.tab:not([aria-selected='true']):hover {
+  background: rgb(43 31 23 / 0.06);
+}
+
+.panel {
+  padding: var(--s-4);
+}
+
+.cultivar {
+  margin-bottom: var(--s-4);
+  font-size: var(--t-28);
+}
+
+.grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--tierra);
+}
+
+.row {
+  display: grid;
+  gap: 2px;
+  padding: var(--s-2) var(--s-3) var(--s-2) 0;
+  border-bottom: 1px solid rgb(43 31 23 / 0.35);
+}
+
+.row:nth-child(odd) {
+  padding-right: var(--s-4);
+  border-right: 1px solid rgb(43 31 23 / 0.35);
+}
+
+.row:nth-child(even) {
+  padding-left: var(--s-4);
+}
+
+.row dt {
+  font-size: var(--t-14);
+  color: var(--tierra-80);
+}
+
+.row dd {
+  margin: 0;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .intro {
+    position: static;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .row:nth-child(odd),
+  .row:nth-child(even) {
+    padding: var(--s-2) 0;
+    border-right: 0;
+  }
+
+  .tabs {
+    flex-direction: column;
+  }
+
+  .tab {
+    border-right: 0;
+    border-bottom: 1px solid var(--tierra);
+  }
+
+  .tab:last-child {
+    border-bottom: 0;
+  }
+}

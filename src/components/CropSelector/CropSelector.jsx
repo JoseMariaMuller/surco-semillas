@@ -7,7 +7,7 @@ import styles from './CropSelector.module.css'
  * Selector de cultivo como grupo de radio accesible:
  * Tab entra al seleccionado; las flechas mueven y eligen; Inicio y Fin van a los extremos.
  */
-export default function CropSelector({ value, onChange, className = '' }) {
+export default function CropSelector({ value, onChange, className = '', label = 'Cultivo' }) {
   const refs = useRef([])
   const index = CROP_LIST.findIndex((c) => c.id === value)
 
@@ -34,7 +34,7 @@ export default function CropSelector({ value, onChange, className = '' }) {
   }
 
   return (
-    <div role="radiogroup" aria-label="Cultivo" className={`${styles.group} ${className}`} onKeyDown={onKeyDown}>
+    <div role="radiogroup" aria-label={label} className={`${styles.group} ${className}`} onKeyDown={onKeyDown}>
       {CROP_LIST.map((c, i) => {
         const checked = c.id === value
         return (

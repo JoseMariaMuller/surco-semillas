@@ -1,0 +1,90 @@
+.footer {
+  padding-top: clamp(3rem, 7vw, 5rem);
+  background: var(--tierra);
+  color: var(--cielo);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(3, 1fr);
+  gap: var(--s-6);
+  padding-bottom: var(--s-7);
+}
+
+.logo {
+  width: 3rem;
+  height: auto;
+  color: var(--cielo);
+}
+
+.name {
+  margin: var(--s-3) 0 var(--s-2);
+  font-size: var(--t-28);
+  font-weight: 800;
+  font-stretch: 125%;
+  line-height: 1;
+}
+
+.h {
+  margin-bottom: var(--s-3);
+  font-size: var(--t-17);
+  line-height: 1.2;
+}
+
+.address {
+  font-style: normal;
+}
+
+.small {
+  margin-top: var(--s-2);
+  font-size: var(--t-14);
+  color: rgb(220 228 225 / 0.8);
+}
+
+.links {
+  display: grid;
+  gap: var(--s-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.links a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.links a:hover {
+  color: var(--espiga);
+}
+
+.footer :focus-visible {
+  outline-color: var(--espiga);
+}
+
+.bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-5);
+  padding-block: var(--s-5);
+  border-top: 1px solid rgb(220 228 225 / 0.25);
+  font-size: var(--t-14);
+  color: rgb(220 228 225 / 0.85);
+}
+
+@media (max-width: 860px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .brand {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
