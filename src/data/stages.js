@@ -171,10 +171,20 @@ export const GROWTH_FRAMES = GROWTH_TABLE.map((row) =>
   Object.fromEntries(GROWTH_KEYS.map((k, j) => [k, row[j]])),
 )
 
-// Cámara por etapa. `head` es el centro de la cabeza; `ear` el choclo (maíz).
-export function cameraFrame(i, crop, head, ear) {
+// Cámara por etapa. `head` es el centro de la cabeza; `focus`, lo que se mira de
+// cerca en las etapas reproductivas (choclo en maíz, vainas en soja, cabeza en el resto).
+// Maíz (7 y 8) y soja (6 a 8) usan un primer plano a media altura.
+function midHeight(crop, i) {
+  if (crop.id === 'maiz') return i === 7 || i === 8
+  if (crop.cabeza === 'vainas') return i >= 6 && i <= 8
+  return false
+}
+
+export function cameraFrame(i, crop, head, focus) {
   const { H, d } = crop
-  const focus = crop.id === 'maiz' && (i === 7 || i === 8) ? ear : head
+  if (midHeight(crop, i) && i === 6) {
+    return { pos: [focus[0] + 0.3 * H * 0.5, focus[1] + 0.08, focus[2] + 0.55 * H * 0.5], look: focus }
+  }
   switch (i) {
     case 0: return { pos: [0, -d, 0.12], look: [0, -d, 0] }
     case 1: return { pos: [0.03, -d - 0.03, 0.22], look: [0, -d - 0.04, 0] }
@@ -184,11 +194,11 @@ export function cameraFrame(i, crop, head, ear) {
     case 5: return { pos: [0.9 * H, 0.45 * H, 1.6 * H], look: [0, 0.4 * H, 0] }
     case 6: return { pos: [0.35 * H, 0.95 * H, 0.6 * H], look: head }
     case 7:
-      return crop.id === 'maiz'
+      return midHeight(crop, i)
         ? { pos: [focus[0] + 0.25 * H * 0.5, focus[1] + 0.05, focus[2] + 0.45 * H * 0.5], look: focus }
         : { pos: [0.25 * H, 0.95 * H, 0.45 * H], look: focus }
     case 8:
-      return crop.id === 'maiz'
+      return midHeight(crop, i)
         ? { pos: [focus[0] - 0.3 * H * 0.5, focus[1] + 0.02, focus[2] + 0.5 * H * 0.5], look: focus }
         : { pos: [-0.3 * H, 0.9 * H, 0.5 * H], look: focus }
     case 9: return { pos: [0.6 * H, 0.8 * H, 1.2 * H], look: [0, 0.75 * H, 0] }

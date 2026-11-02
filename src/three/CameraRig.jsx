@@ -13,7 +13,7 @@ export default function CameraRig({ crop, layout, reduced = false }) {
   // La versión centrípeta evita rulos y sobrepasos entre etapas de escalas muy distintas.
   const paths = useMemo(() => {
     const frames = Array.from({ length: STAGE_COUNT }, (_, i) =>
-      cameraFrame(i, crop, layout.headCenter, layout.earCenter),
+      cameraFrame(i, crop, layout.headCenter, layout.focus),
     )
     return {
       frames,

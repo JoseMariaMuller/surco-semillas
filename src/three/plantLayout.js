@@ -41,7 +41,27 @@ export const MORPH = {
     headLen: 0.25, seminal: 3, rootDepth: 0.44,
     seed: { len: 0.0045, w: 0.0042, h: 0.004 },
   },
+  // Dicotiledóneas: un nudo por hoja (salvo los pares opuestos de abajo).
+  // headLen es el tramo vertical sobre el último nudo (cuello y capítulo).
+  girasol: {
+    leaves: 16, pairs: 3,
+    nodes: [0.03, 0.07, 0.12, 0.2, 0.28, 0.36, 0.44, 0.52, 0.6, 0.68, 0.76, 0.84, 0.92],
+    petiole: [0.04, 0.13], blade: [0.08, 0.26],
+    stemR: 0.01, headLen: 0.15, disc: 0.22,
+    rootDepth: 0.46, laterals: [15, 20],
+    seed: { len: 0.011, w: 0.0055, h: 0.0035 },
+  },
+  soja: {
+    leaves: 13, pairs: 1,
+    nodes: [0.05, 0.12, 0.2, 0.28, 0.36, 0.44, 0.52, 0.6, 0.68, 0.76, 0.85, 0.94],
+    petiole: [0.03, 0.12], blade: [0.04, 0.09],
+    stemR: 0.003, headLen: 0.02, branches: 3,
+    rootDepth: 0.44, laterals: [15, 20],
+    seed: { len: 0.0075, w: 0.0068, h: 0.006 },
+  },
 }
+
+const GOLDEN = Math.PI * (3 - Math.sqrt(5)) // 137,5°
 
 const LIMIT_X = BOX.w / 2 - 0.02
 const LIMIT_Y = -BOX.depth + 0.02
@@ -95,7 +115,7 @@ function buildRoots(crop, m, rng) {
       const len = rng.range(0.018, 0.06) * (1 - u * 0.6)
       laterals.push({ u, curve: rootPath(rng, p0, ang, len, 4, 0.02) })
     }
-    roots.push({ curve, delay, primary: isPrimary, laterals })
+    roots.push({ curve, delay, primary: isPrimary, laterals, radius: isPrimary ? 1.15 : 1 })
   }
 
   // Maíz: raíces de la corona, que salen de los nudos de la base desde V6-V8
@@ -114,21 +134,144 @@ function buildRoots(crop, m, rng) {
         const ang = Math.atan2(tan.x, -tan.y) + (k % 2 ? 1 : -1) * rng.range(0.9, 1.3)
         laterals.push({ u, curve: rootPath(rng, p0, ang, rng.range(0.02, 0.05), 4, 0.02) })
       }
-      roots.push({ curve, delay: 0.55 + j * 0.035, primary: false, crown: true, laterals })
+      roots.push({ curve, delay: 0.55 + j * 0.035, primary: false, crown: true, laterals, radius: 1.45 })
     }
   }
   return roots
 }
 
+/**
+ * Raíz pivotante (dicotiledóneas): una principal gruesa que baja casi recta y
+ * laterales más horizontales y largas arriba, más cortas abajo.
+ */
+function buildTaproot(crop, m, rng) {
+  const seedPos = new Vector3(0, -crop.d, 0)
+  const curve = rootPath(rng, seedPos.clone().add(new Vector3(0, -0.001, 0)), rng.range(-0.04, 0.04), m.rootDepth, 18, 0.01)
+  const laterals = []
+  const count = rng.int(m.laterals[0], m.laterals[1])
+  for (let k = 0; k < count; k++) {
+    const u = 0.05 + (k / count) * 0.8 + rng.range(-0.02, 0.02)
+    const p0 = curve.getPointAt(Math.min(u, 0.99))
+    const tan = curve.getTangentAt(Math.min(u, 0.99))
+    const side = k % 2 === 0 ? 1 : -1
+    const ang = Math.atan2(tan.x, -tan.y) + side * rng.range(1.1, 1.5)
+    const len = rng.range(0.06, 0.16) * (1 - 0.5 * u)
+    laterals.push({ u, curve: rootPath(rng, p0, ang, len, 6, 0.016) })
+  }
+  return [{ curve, delay: 0, primary: true, laterals, radius: 1.8 }]
+}
+
+// Nódulos de la soja: sobre las laterales de la mitad de arriba de la raíz.
+function buildNodules(crop, roots) {
+  if (crop.id !== 'soja') return []
+  const rng = createRng(`nodulos-${crop.id}`)
+  const upper = roots[0].laterals.filter((l) => l.u < 0.5)
+  const n = rng.int(36, 50)
+  const out = []
+  for (let i = 0; i < n; i++) {
+    const l = upper[rng.int(0, upper.length - 1)]
+    out.push(l.curve.getPointAt(rng.range(0.1, 0.9)))
+  }
+  return out
+}
+
+/**
+ * Hojas de dicotiledónea: los primeros nudos llevan pares opuestos y después
+ * se alternan (girasol en espiral; soja, trifoliadas a 180°).
+ */
+function dicotLeaves(crop, m, rng) {
+  const leaves = []
+  let az = rng.range(0, Math.PI * 2)
+  let k = 0
+  m.nodes.forEach((node, ni) => {
+    const pair = ni < m.pairs
+    const r = ni / (m.nodes.length - 1)
+    // Tamaño: chico abajo, máximo cerca del 40 % de la altura, más chico arriba
+    const size = Math.sin(Math.PI * Math.min(1, 0.15 + r * 0.9)) * 0.85 + 0.15
+    const kind = crop.id === 'girasol' ? 'acorazonada' : ni === 0 ? 'unifoliada' : 'trifoliada'
+    const blade = kind === 'unifoliada' ? m.blade[0] * 1.2 : m.blade[0] + (m.blade[1] - m.blade[0]) * size
+    const petiole = kind === 'unifoliada' ? m.petiole[0] : m.petiole[0] + (m.petiole[1] - m.petiole[0]) * size
+    const sides = pair ? [0, Math.PI] : [0]
+    for (const off of sides) {
+      leaves.push({
+        k: k++,
+        node,
+        nodeIndex: ni,
+        azimuth: az + off,
+        petiole,
+        blade,
+        kind,
+        droop: 0.25 + 0.55 * (1 - r) + rng.range(-0.08, 0.08),
+        lean: 0.9 + 0.35 * (1 - r) + rng.range(-0.1, 0.1),
+      })
+    }
+    // pares cruzados abajo; después espiral (girasol) o alternas (soja)
+    az += pair ? Math.PI / 2 : crop.id === 'girasol' ? GOLDEN : Math.PI + rng.range(-0.35, 0.35)
+  })
+  return leaves
+}
+
+// Ramas de la soja: desde los nudos de abajo, del lado de su hoja.
+function soyBranches(m, leaves, rng) {
+  if (!m.branches) return []
+  return [2, 3, 4].slice(0, m.branches).map((ni) => {
+    const leaf = leaves.find((l) => l.nodeIndex === ni)
+    return {
+      node: m.nodes[ni],
+      nodeIndex: ni,
+      azimuth: leaf.azimuth + rng.range(-0.25, 0.25),
+      tilt: rng.range(0.5, 0.7),
+      len: rng.range(0.28, 0.4),
+      leaves: 3,
+    }
+  })
+}
+
 // Centro de la cabeza ya crecida, para la cámara.
 function headCenterFor(crop, stemLen, headLen) {
+  if (crop.cabeza === 'capitulo') return [0, stemLen + headLen * 0.55, 0]
   const k = crop.cabeza === 'panoja-abierta' ? 0.42 : 0.5
   return [0, stemLen + headLen * k, 0]
+}
+
+// Lo que mira la cámara en las etapas reproductivas.
+function focusFor(crop, headCenter, earCenter) {
+  if (crop.id === 'maiz') return earCenter
+  if (crop.cabeza === 'vainas') return [0.05, crop.H * 0.5, 0]
+  return headCenter
+}
+
+// El capítulo mira hacia la cámara de las etapas 6 y 7 (rotación en Y del eje +Z local).
+const CAPITULUM_AZIMUTH = Math.atan2(0.35, 0.6)
+
+function buildDicotLayout(crop, m, rng) {
+  const headLen = m.headLen
+  const stemLen = crop.H - headLen
+  const leaves = dicotLeaves(crop, m, rng)
+  const roots = buildTaproot(crop, m, rng)
+  const headCenter = headCenterFor(crop, stemLen, headLen)
+  const ear = earLayout(crop, m, stemLen)
+  return {
+    crop,
+    m,
+    stemLen,
+    headLen,
+    leaves,
+    roots,
+    nodules: buildNodules(crop, roots),
+    branches: soyBranches(m, leaves, rng),
+    headCenter,
+    headAzimuth: crop.cabeza === 'capitulo' ? CAPITULUM_AZIMUTH : rng.range(0, Math.PI * 2),
+    ...ear,
+    focus: focusFor(crop, headCenter, ear.earCenter),
+    tillers: [],
+  }
 }
 
 export function buildLayout(crop) {
   const m = MORPH[crop.id]
   const rng = createRng(`planta-${crop.id}`)
+  if (crop.tipo === 'dicotiledonea') return buildDicotLayout(crop, m, rng)
   const headLen = m.headLen
   const stemLen = crop.H - headLen
   const N = m.leaves
@@ -158,16 +301,23 @@ export function buildLayout(crop) {
     az += Math.PI + rng.range(-0.35, 0.35) // alterna 180° ± variación
   }
 
+  const headCenter = headCenterFor(crop, stemLen, headLen)
+  const roots = buildRoots(crop, m, rng)
+  const headAzimuth = rng.range(0, Math.PI * 2)
+  const ear = earLayout(crop, m, stemLen)
   return {
     crop,
     m,
     stemLen,
     headLen,
     leaves,
-    roots: buildRoots(crop, m, rng),
-    headCenter: headCenterFor(crop, stemLen, headLen),
-    headAzimuth: rng.range(0, Math.PI * 2),
-    ...earLayout(crop, m, stemLen),
+    roots,
+    nodules: [],
+    branches: [],
+    headCenter,
+    headAzimuth,
+    ...ear,
+    focus: focusFor(crop, headCenter, ear.earCenter),
     tillers: tillerPlacements(crop, rng),
   }
 }
