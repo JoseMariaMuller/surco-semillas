@@ -150,3 +150,23 @@
     font-size: var(--t-21);
   }
 }
+
+/* Pantallas muy angostas (360 px): marca y botón más compactos */
+@media (max-width: 400px) {
+  .inner {
+    gap: var(--s-3);
+    width: calc(100% - 2 * var(--s-4));
+  }
+
+  .brand {
+    font-size: var(--t-17);
+  }
+
+  .logo {
+    width: 1.9rem;
+  }
+
+  .toggle {
+    padding: 0 var(--s-2);
+  }
+}

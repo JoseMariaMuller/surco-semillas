@@ -1,0 +1,217 @@
+.panels {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Todos en el DOM; solo el activo se ve. La opacidad no los saca del árbol de accesibilidad. */
+.hero,
+.card {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+.hero[data-active='true'],
+.card[data-active='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero,
+  .card {
+    transition: none;
+  }
+}
+
+/* ---------- Hero (etapa 0) ---------- */
+.hero {
+  left: max(var(--s-5), calc((100vw - 90rem) / 2));
+  right: var(--s-5);
+  bottom: var(--s-8);
+  max-width: 44rem;
+  isolation: isolate;
+  color: var(--cielo);
+  text-shadow: 0 1px 18px rgb(20 12 8 / 0.5);
+}
+
+/* Velo detrás del titular para que se lea sobre la tierra */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: -40% -30% -30% -40%;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgb(30 20 13 / 0.62), rgb(30 20 13 / 0));
+  pointer-events: none;
+}
+
+.title {
+  font-size: var(--t-hero);
+}
+
+.lead {
+  margin-top: var(--s-5);
+  font-size: var(--t-21);
+  line-height: 1.45;
+}
+
+.heroStage {
+  margin-top: var(--s-4);
+  max-width: 34rem;
+  font-size: var(--t-17);
+  opacity: 0.92;
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-5);
+  font-size: var(--t-14);
+  font-weight: 600;
+}
+
+.hint svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ---------- Tarjetas de etapa ---------- */
+.card {
+  left: max(var(--s-5), calc((100vw - 90rem) / 2));
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(26rem, calc(100% - 2 * var(--s-5)));
+  padding: var(--s-5);
+  background: rgb(238 242 240 / 0.95);
+  color: var(--tierra);
+  border: var(--borde);
+  border-radius: var(--radio);
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-4);
+  margin-bottom: var(--s-3);
+  font-size: var(--t-14);
+}
+
+.code {
+  font-weight: 800;
+  font-stretch: 125%;
+  color: var(--curasemilla-oscuro);
+}
+
+.hero .code {
+  color: var(--cielo);
+  padding: 0.1em 0.4em;
+  margin-right: 0.25em;
+  border: 1.5px solid currentColor;
+  border-radius: var(--radio);
+  font-size: var(--t-14);
+}
+
+.name {
+  margin-bottom: var(--s-3);
+  font-size: var(--t-28);
+  line-height: 1;
+}
+
+.count {
+  margin-top: var(--s-4);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--tierra-15);
+}
+
+.count strong {
+  display: block;
+  font-size: var(--t-28);
+  font-stretch: 125%;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.note {
+  margin-top: var(--s-3);
+  font-size: var(--t-14);
+  color: var(--tierra-80);
+}
+
+/* ---------- Mobile: tarjeta abajo ---------- */
+@media (max-width: 760px) {
+  .card {
+    top: auto;
+    bottom: var(--s-3);
+    left: var(--s-3);
+    right: var(--s-3);
+    width: auto;
+    transform: none;
+    padding: var(--s-4);
+  }
+
+  .name {
+    font-size: var(--t-21);
+  }
+
+  .text {
+    font-size: var(--t-14);
+    line-height: 1.5;
+  }
+
+  .hero {
+    left: var(--s-4);
+    right: var(--s-4);
+    bottom: var(--s-6);
+  }
+
+  .lead {
+    font-size: var(--t-17);
+  }
+
+  .heroStage {
+    display: none;
+  }
+}
+
+/* Pantallas bajas (celular en horizontal): tarjeta compacta abajo a la izquierda */
+@media (max-height: 560px) and (min-width: 761px) {
+  .card {
+    top: auto;
+    bottom: 2.75rem;
+    transform: none;
+    width: min(24rem, 46vw);
+    padding: var(--s-3) var(--s-4);
+  }
+
+  .name {
+    font-size: var(--t-21);
+    margin-bottom: var(--s-2);
+  }
+
+  .text {
+    font-size: var(--t-14);
+    line-height: 1.45;
+  }
+
+  .hero {
+    bottom: 2.75rem;
+  }
+
+  .title {
+    font-size: clamp(2.25rem, 7vh, 3.5rem);
+  }
+
+  .lead {
+    font-size: var(--t-14);
+    margin-top: var(--s-2);
+  }
+
+  .heroStage,
+  .hint {
+    display: none;
+  }
+}

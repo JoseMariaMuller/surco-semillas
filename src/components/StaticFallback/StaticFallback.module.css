@@ -1,0 +1,12 @@
+.wrap {
+  position: absolute;
+  inset: 0;
+  background: #3a281c;
+}
+
+.svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}

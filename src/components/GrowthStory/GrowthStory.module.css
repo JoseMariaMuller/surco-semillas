@@ -39,117 +39,19 @@
   left: max(var(--s-5), calc((100vw - 90rem) / 2));
 }
 
-.hint {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  margin-top: var(--s-6);
-  font-size: var(--t-14);
-  font-weight: 600;
-}
-
-.hint svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-.hero {
-  position: absolute;
-  left: max(var(--s-5), calc((100vw - 90rem) / 2));
-  right: var(--s-5);
-  bottom: var(--s-8);
-  max-width: 44rem;
-  isolation: isolate;
-  color: var(--cielo);
-  text-shadow: 0 1px 18px rgb(20 12 8 / 0.5);
-}
-
-.hero[hidden] {
-  display: none;
-}
-
-/* Velo detrás del titular para que se lea sobre la tierra */
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: -40% -30% -30% -40%;
-  z-index: -1;
-  background: radial-gradient(closest-side, rgb(30 20 13 / 0.62), rgb(30 20 13 / 0));
-  pointer-events: none;
-}
-
-.title {
-  font-size: var(--t-hero);
-}
-
-.lead {
-  margin-top: var(--s-5);
-  font-size: var(--t-21);
-  line-height: 1.45;
-}
-
-.panel {
-  position: absolute;
-  left: max(var(--s-5), calc((100vw - 90rem) / 2));
-  top: 50%;
-  transform: translateY(-50%);
-  width: min(26rem, calc(100% - 2 * var(--s-5)));
-  padding: var(--s-5);
-  background: rgb(238 242 240 / 0.94);
-  border: var(--borde);
-  border-radius: var(--radio);
-}
-
-.code {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--s-4);
-  margin-bottom: var(--s-3);
-  font-size: var(--t-14);
-}
-
-.code span:first-child {
-  font-weight: 800;
-  font-stretch: 125%;
-  color: var(--curasemilla-oscuro);
-}
-
-.stageName {
-  margin-bottom: var(--s-3);
-  font-size: var(--t-28);
-  line-height: 1;
-}
-
-.count {
-  margin-top: var(--s-4);
-  padding-top: var(--s-3);
-  border-top: 1px solid var(--tierra-15);
-}
-
-.count strong {
-  font-size: var(--t-28);
-  font-stretch: 125%;
-  font-weight: 800;
-}
-
 @media (max-width: 760px) {
   .selector {
     left: var(--s-3);
     right: var(--s-3);
     top: calc(var(--header-h) + var(--s-2));
   }
+}
 
-  .panel {
-    top: auto;
-    bottom: var(--s-4);
-    left: var(--s-4);
-    right: var(--s-4);
-    width: auto;
-    transform: none;
-    padding: var(--s-4);
-  }
-
-  .hero {
-    bottom: var(--s-7);
+/* Celular en horizontal: el selector va arriba a la derecha para dejar lugar a la tarjeta */
+@media (max-height: 560px) and (min-width: 761px) {
+  .selector {
+    left: auto;
+    right: var(--s-3);
+    top: calc(var(--header-h) + var(--s-2));
   }
 }

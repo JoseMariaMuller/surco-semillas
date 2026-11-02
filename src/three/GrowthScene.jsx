@@ -103,7 +103,7 @@ function SkyAndLight({ state, shadows }) {
 }
 
 // memo: el cambio de etapa re-renderiza la historia, pero la escena no lo necesita.
-export default memo(function GrowthScene({ cropId, progressRef, reduced = false, mobile = false, onStage }) {
+export default memo(function GrowthScene({ cropId, progressRef, reduced = false, mobile = false, active = true, onStage }) {
   const state = useMemo(() => createGrowthState(), [])
   const quality = mobile ? 'low' : 'high'
   const shadows = !mobile
@@ -112,6 +112,8 @@ export default memo(function GrowthScene({ cropId, progressRef, reduced = false,
     <Canvas
       aria-hidden="true"
       dpr={[1, 1.75]}
+      // Fuera de pantalla no se dibuja nada
+      frameloop={active ? 'always' : 'never'}
       shadows={shadows ? 'percentage' : false}
       camera={{ fov: 38, near: 0.003, far: 220, position: [0, -CROPS[cropId].d, 0.12] }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
