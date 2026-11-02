@@ -10,8 +10,16 @@ import {
   Shape,
   ShapeGeometry,
 } from 'three'
-import { createFieldTexture, createGlassSheenTexture, createSoilProfileTexture } from './soilTexture.js'
+import {
+  createFieldTexture,
+  createGlassSheenTexture,
+  createSoilDetailTexture,
+  createSoilProfileTexture,
+} from './soilTexture.js'
 import { BOX, GLASS_Z, PIT } from './dimensions.js'
+
+// Zona del parche de detalle (m): cubre lo que encuadran las etapas 0 y 1.
+const DETAIL = { x0: -0.17, x1: 0.13, d0: 0, d1: 0.19 }
 
 const TEX_W = 0.6
 const TEX_D = 0.5
@@ -60,6 +68,23 @@ export default function Rhizotron({ rowSpacing = 0.175, quality = 'high' }) {
 
     const sheen = createGlassSheenTexture()
 
+    // Parche nítido alrededor de la semilla para los primeros planos bajo tierra
+    const detail = createSoilDetailTexture(soil.image, {
+      rect: DETAIL,
+      px: quality === 'high' ? 2600 : 1400,
+    })
+    detail.anisotropy = 8
+    const detailMat = new MeshStandardMaterial({
+      map: detail,
+      roughness: 0.95,
+      transparent: true,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    })
+    const detailGeo = new PlaneGeometry(DETAIL.x1 - DETAIL.x0, DETAIL.d1 - DETAIL.d0)
+
     const soilMat = new MeshStandardMaterial({ map: soil, roughness: 0.95, metalness: 0 })
     const groundMat = new MeshStandardMaterial({ map: field, roughness: 1, metalness: 0 })
     const glassMat = new MeshStandardMaterial({
@@ -93,9 +118,10 @@ export default function Rhizotron({ rowSpacing = 0.175, quality = 'high' }) {
     const barH = new BoxGeometry(BOX.w + 0.008, 0.006, 0.008)
 
     return {
-      textures: [soil, field, sheen],
-      materials: { soilMat, groundMat, glassMat, sheenMat, aluMat },
+      textures: [soil, field, sheen, detail],
+      materials: { soilMat, groundMat, glassMat, sheenMat, aluMat, detailMat },
       geos: {
+        detailGeo,
         wallBack, wallSide, pitSide, pitFront, pitWing, pitUnder, floor, boxBottom, glass, barV, barH,
         ground: groundGeometry(),
       },
@@ -111,7 +137,7 @@ export default function Rhizotron({ rowSpacing = 0.175, quality = 'high' }) {
     [assets],
   )
 
-  const { soilMat, groundMat, glassMat, sheenMat, aluMat } = assets.materials
+  const { soilMat, groundMat, glassMat, sheenMat, aluMat, detailMat } = assets.materials
   const g = assets.geos
   const hw = BOX.w / 2
   const wingX = hw + (PIT.halfW - hw) / 2
@@ -124,6 +150,12 @@ export default function Rhizotron({ rowSpacing = 0.175, quality = 'high' }) {
 
       {/* Caja del rizotrón: fondo, laterales y piso con perfil de suelo */}
       <mesh geometry={g.wallBack} material={soilMat} position={[0, 0, -GLASS_Z]} receiveShadow />
+      <mesh
+        geometry={g.detailGeo}
+        material={detailMat}
+        position={[(DETAIL.x0 + DETAIL.x1) / 2, -(DETAIL.d0 + DETAIL.d1) / 2, -GLASS_Z + 0.0003]}
+        renderOrder={1}
+      />
       <mesh geometry={g.wallSide} material={soilMat} position={[-hw, 0, 0]} rotation-y={Math.PI / 2} />
       <mesh geometry={g.wallSide} material={soilMat} position={[hw, 0, 0]} rotation-y={-Math.PI / 2} />
       <mesh geometry={g.boxBottom} material={soilMat} position={[0, -BOX.depth, 0]} rotation-x={-Math.PI / 2} />

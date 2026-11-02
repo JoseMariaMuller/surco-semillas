@@ -38,7 +38,7 @@ export function Coleoptile({ crop, layout, quality }) {
  * Vástago: tallo con nudos, hojas y la cabeza arriba.
  * `head` se renderiza en un grupo que sigue la punta del tallo.
  */
-export default function Culm({ layout, palette, quality, head, scale = 1 }) {
+export default function Culm({ layout, palette, quality, head, scale = 1, groupRef }) {
   const g = useGrowth()
   const stemRef = useRef()
   const topRef = useRef()
@@ -98,7 +98,7 @@ export default function Culm({ layout, palette, quality, head, scale = 1 }) {
   })
 
   return (
-    <group scale={scale}>
+    <group scale={scale} ref={groupRef}>
       <mesh ref={stemRef} geometry={stemGeo} material={stemMat} castShadow />
       {m.nodes.map((_, i) => (
         <mesh

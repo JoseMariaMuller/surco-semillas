@@ -38,12 +38,23 @@
   right: var(--s-5);
   bottom: var(--s-8);
   max-width: 44rem;
+  isolation: isolate;
   color: var(--cielo);
   text-shadow: 0 1px 18px rgb(20 12 8 / 0.5);
 }
 
 .hero[hidden] {
   display: none;
+}
+
+/* Velo detrás del titular para que se lea sobre la tierra */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: -40% -30% -30% -40%;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgb(30 20 13 / 0.62), rgb(30 20 13 / 0));
+  pointer-events: none;
 }
 
 .title {

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { memo, useLayoutEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Color, Fog, Vector3 } from 'three'
 import { CROPS } from '../data/crops.js'
@@ -94,7 +94,8 @@ function SkyAndLight({ state, shadows }) {
   )
 }
 
-export default function GrowthScene({ cropId, progressRef, reduced = false, mobile = false, onStage }) {
+// memo: el cambio de etapa re-renderiza la historia, pero la escena no lo necesita.
+export default memo(function GrowthScene({ cropId, progressRef, reduced = false, mobile = false, onStage }) {
   const state = useMemo(() => createGrowthState(), [])
   const crop = CROPS[cropId]
   const quality = mobile ? 'low' : 'high'
@@ -112,10 +113,10 @@ export default function GrowthScene({ cropId, progressRef, reduced = false, mobi
       <GrowthContext.Provider value={state}>
         <Driver state={state} progressRef={progressRef} reduced={reduced} onStage={onStage} />
         <SkyAndLight state={state} shadows={shadows} />
-        <CameraRig crop={crop} layout={layout} />
+        <CameraRig crop={crop} layout={layout} reduced={reduced} />
         <Rhizotron rowSpacing={crop.surco} quality={quality} />
         <Plant crop={crop} layout={layout} quality={quality} />
       </GrowthContext.Provider>
     </Canvas>
   )
-}
+})

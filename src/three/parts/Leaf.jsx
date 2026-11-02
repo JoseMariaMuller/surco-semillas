@@ -27,6 +27,8 @@ export default function Leaf({ leaf, count, palette, quality, stemR }) {
     // `last` vive con la geometría: si se reconstruye, se vuelve a formar.
     return { geometry, material, green, ripe, last: { grow: -1, open: -1 } }
   }, [palette, quality])
+  // Parámetros fijos de forma (evita crear objetos en cada cuadro).
+  const params = useMemo(() => ({ ...leaf, offset: stemR }), [leaf, stemR])
 
   useEffect(
     () => () => {
@@ -45,7 +47,7 @@ export default function Leaf({ leaf, count, palette, quality, stemR }) {
     const open = clamp01(grow * 1.25 - 0.15)
     const l = last
     if (Math.abs(l.grow - grow) > 1e-4 || Math.abs(l.open - open) > 1e-4) {
-      shapeLeaf(geometry, { ...leaf, offset: stemR }, Math.max(grow, 0.02), open)
+      shapeLeaf(geometry, params, Math.max(grow, 0.02), open)
       l.grow = grow
       l.open = open
     }

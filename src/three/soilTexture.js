@@ -126,6 +126,135 @@ export function createSoilProfileTexture({ widthM = 0.6, depthM = 0.5, px = 1024
 }
 
 /**
+ * Parche de detalle para los primeros planos de la semilla.
+ * Parte de la misma zona del perfil (así los colores coinciden), la amplía
+ * y le suma grano fino nítido. Los bordes se funden con transparencia.
+ * `rect` en metros: x de -widthM/2 a widthM/2, d = profundidad positiva.
+ */
+export function createSoilDetailTexture(baseCanvas, { widthM = 0.6, depthM = 0.5, rect, px = 2600, seed = 'detalle' }) {
+  const { x0, x1, d0, d1 } = rect
+  const w = px
+  const h = Math.round((px * (d1 - d0)) / (x1 - x0))
+  const canvas = makeCanvas(w, h)
+  const ctx = canvas.getContext('2d')
+  const rng = createRng(seed)
+  const pxPerM = w / (x1 - x0)
+
+  // 1. La misma porción del perfil, ampliada con suavizado
+  const bw = baseCanvas.width
+  const bh = baseCanvas.height
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(
+    baseCanvas,
+    ((x0 + widthM / 2) / widthM) * bw,
+    (d0 / depthM) * bh,
+    ((x1 - x0) / widthM) * bw,
+    ((d1 - d0) / depthM) * bh,
+    0,
+    0,
+    w,
+    h,
+  )
+
+  // 2. Ruido por píxel: textura de arena y limo
+  const img = ctx.getImageData(0, 0, w, h)
+  const data = img.data
+  for (let i = 0; i < data.length; i += 4) {
+    const n = (rng.next() - 0.5) * 16
+    data[i] = Math.max(0, Math.min(255, data[i] + n))
+    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + n * 0.9))
+    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + n * 0.8))
+  }
+  ctx.putImageData(img, 0, 0)
+
+  // 3. Granos de arena nítidos, claros y oscuros
+  const grains = Math.round(w * h * 0.006)
+  for (let n = 0; n < grains; n++) {
+    const x = rng.next() * w
+    const y = rng.next() * h
+    const s = rng.range(0.8, 2.4)
+    const light = rng.next() < 0.4
+    ctx.fillStyle = light
+      ? `rgba(${rng.int(160, 196)},${rng.int(132, 160)},${rng.int(98, 124)},${rng.range(0.2, 0.5)})`
+      : `rgba(12,8,5,${rng.range(0.25, 0.6)})`
+    ctx.beginPath()
+    ctx.ellipse(x, y, s, s * rng.range(0.6, 1), rng.range(0, Math.PI), 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // 4. Agregados con luz y sombra (miga del suelo)
+  for (let n = 0; n < Math.round(w * h * 0.0006); n++) {
+    const x = rng.next() * w
+    const y = rng.next() * h
+    const r = rng.range(5, 16)
+    ctx.fillStyle = 'rgba(10,6,4,0.4)'
+    ctx.beginPath()
+    ctx.ellipse(x + r * 0.25, y + r * 0.3, r, r * 0.8, rng.range(0, Math.PI), 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = 'rgba(160,120,85,0.22)'
+    ctx.beginPath()
+    ctx.ellipse(x - r * 0.15, y - r * 0.2, r * 0.8, r * 0.6, rng.range(0, Math.PI), 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // 5. Piedritas con brillo
+  for (let n = 0; n < Math.round(w * h * 0.000018); n++) {
+    const x = rng.next() * w
+    const y = rng.next() * h
+    const r = rng.range(4, 12)
+    const tone = rng.range(0.1, 0.5)
+    const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.05, x, y, r)
+    g.addColorStop(0, rgb(mix([175, 165, 150], [235, 225, 205], tone)))
+    g.addColorStop(0.7, rgb(mix([110, 100, 88], [160, 150, 132], tone)))
+    g.addColorStop(1, rgb([45, 38, 30]))
+    ctx.fillStyle = g
+    ctx.beginPath()
+    ctx.ellipse(x, y, r, r * rng.range(0.6, 0.9), rng.range(0, Math.PI), 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // 6. Fibras orgánicas finas
+  ctx.lineCap = 'round'
+  for (let n = 0; n < Math.round(w * h * 0.00005); n++) {
+    const x = rng.next() * w
+    const y = rng.next() * h
+    const len = rng.range(0.004, 0.018) * pxPerM
+    const a = rng.range(0, Math.PI * 2)
+    ctx.strokeStyle = rng.next() < 0.6 ? 'rgba(20,13,8,0.55)' : 'rgba(150,118,76,0.4)'
+    ctx.lineWidth = rng.range(0.8, 1.8)
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+    ctx.quadraticCurveTo(
+      x + Math.cos(a) * len * 0.5 + rng.range(-len, len) * 0.2,
+      y + Math.sin(a) * len * 0.5 + rng.range(-len, len) * 0.2,
+      x + Math.cos(a) * len,
+      y + Math.sin(a) * len,
+    )
+    ctx.stroke()
+  }
+
+  // 7. Bordes que se funden con la pared
+  ctx.globalCompositeOperation = 'destination-out'
+  const fade = Math.round(Math.min(w, h) * 0.16)
+  const edges = [
+    [0, 0, fade, 0, 0, 0, fade, h],
+    [w, 0, w - fade, 0, w - fade, 0, fade, h],
+    [0, h, 0, h - fade, 0, h - fade, w, fade],
+  ]
+  for (const [gx0, gy0, gx1, gy1, rx, ry, rw, rh] of edges) {
+    const g = ctx.createLinearGradient(gx0, gy0, gx1, gy1)
+    g.addColorStop(0, 'rgba(0,0,0,1)')
+    g.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.fillStyle = g
+    ctx.fillRect(rx, ry, rw, rh)
+  }
+  ctx.globalCompositeOperation = 'source-over'
+
+  return toTexture(canvas)
+}
+
+/**
  * Superficie arada: textura repetible con surcos paralelos al eje Z del mundo.
  * Un mosaico representa `tileM` metros.
  */

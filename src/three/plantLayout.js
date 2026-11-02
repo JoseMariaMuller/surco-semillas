@@ -1,6 +1,6 @@
-import { CatmullRomCurve3, Vector3 } from 'three'
+import { CatmullRomCurve3, Euler, Matrix4, Quaternion, Vector3 } from 'three'
 import { createRng } from '../utils/random.js'
-import { BOX } from './dimensions.js'
+import { BOX, PIT } from './dimensions.js'
 
 // Parámetros morfológicos por cultivo (metros). Los de trigo están completos;
 // el resto se ajusta en la fase de todos los cultivos.
@@ -144,3 +144,39 @@ export function buildLayout(crop) {
     headAzimuth: rng.range(0, Math.PI * 2),
   }
 }
+
+/**
+ * Posiciones del cultivo vecino: hileras a la distancia entre surcos del cultivo,
+ * priorizando lo que queda detrás de la planta principal (donde mira la cámara).
+ */
+export function neighborPlacements(crop, count) {
+  const rng = createRng(`vecinos-${crop.id}`)
+  const row = crop.surco
+  // Separación sobre la hilera: la real, con un mínimo para que no sea una pared.
+  const along = Math.max(1 / (crop.densidad * row), crop.H > 2 ? 0.26 : 0.12)
+  const reachX = Math.max(1.8, crop.H * 2.2)
+  const reachBack = Math.max(4, crop.H * 4)
+  const reachFront = Math.max(1.6, crop.H * 1.6)
+  const cands = []
+  const rows = Math.ceil(reachX / row)
+  for (let k = -rows; k <= rows; k++) {
+    const offset = rng.range(0, along)
+    for (let z = -reachBack + offset; z < reachFront; z += along) {
+      const x = k * row + rng.range(-0.012, 0.012)
+      const zz = z + rng.range(-along * 0.3, along * 0.3)
+      // Fuera del foso y del rizotrón, con margen para que las hojas no lo invadan
+      const inPit = Math.abs(x) < PIT.halfW + 0.06 && zz > -0.08 && zz < PIT.front + 0.08
+      if (inPit) continue
+      // Prioridad: cerca y, sobre todo, detrás
+      const d = Math.hypot(x * 0.8, zz > 0 ? zz * 1.5 : zz * 0.65)
+      cands.push({ x, z: zz, d })
+    }
+  }
+  cands.sort((a, b) => a.d - b.d)
+  return cands.slice(0, count).map(({ x, z }) => {
+    const s = rng.range(0.82, 1.08)
+    const q = new Quaternion().setFromEuler(new Euler(rng.range(-0.05, 0.05), rng.range(0, Math.PI * 2), rng.range(-0.05, 0.05)))
+    return new Matrix4().compose(new Vector3(x, 0, z), q, new Vector3(s, s, s))
+  })
+}
+

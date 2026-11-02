@@ -1,25 +1,41 @@
 import { useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Vector3 } from 'three'
+import { CatmullRomCurve3, Vector3 } from 'three'
 import { cameraFrame, FOV_FRAMES, STAGE_COUNT } from '../data/stages.js'
-import { lerpVec, useGrowth } from './growthState.js'
+import { useGrowth } from './growthState.js'
 
 // Mueve la cámara entre los fotogramas de cada etapa con la misma curva que el crecimiento.
-export default function CameraRig({ crop, layout }) {
+export default function CameraRig({ crop, layout, reduced = false }) {
   const g = useGrowth()
   const camera = useThree((s) => s.camera)
 
-  const frames = useMemo(
-    () => Array.from({ length: STAGE_COUNT }, (_, i) => cameraFrame(i, crop, layout.headCenter, layout.earCenter)),
-    [crop, layout],
-  )
+  // Recorrido continuo: splines por las posiciones y los puntos de mira de cada etapa.
+  // La versión centrípeta evita rulos y sobrepasos entre etapas de escalas muy distintas.
+  const paths = useMemo(() => {
+    const frames = Array.from({ length: STAGE_COUNT }, (_, i) =>
+      cameraFrame(i, crop, layout.headCenter, layout.earCenter),
+    )
+    return {
+      frames,
+      pos: new CatmullRomCurve3(frames.map((f) => new Vector3(...f.pos)), false, 'centripetal'),
+      look: new CatmullRomCurve3(frames.map((f) => new Vector3(...f.look)), false, 'centripetal'),
+    }
+  }, [crop, layout])
   const tmp = useMemo(() => ({ pos: new Vector3(), look: new Vector3(), off: new Vector3() }), [])
   const view = useMemo(() => ({ w: 0, h: 0, x: 0, y: 0 }), [])
 
   useFrame((state) => {
     const { i, t } = g
-    lerpVec(tmp.pos, frames[i].pos, frames[i + 1].pos, t)
-    lerpVec(tmp.look, frames[i].look, frames[i + 1].look, t)
+    if (reduced) {
+      // Movimiento reducido: saltos directos entre fotogramas.
+      const f = paths.frames[t < 0.5 ? i : i + 1]
+      tmp.pos.set(...f.pos)
+      tmp.look.set(...f.look)
+    } else {
+      const u = (i + t) / (STAGE_COUNT - 1)
+      paths.pos.getPoint(u, tmp.pos)
+      paths.look.getPoint(u, tmp.look)
+    }
 
     const { width, height } = state.size
     const aspect = width / height

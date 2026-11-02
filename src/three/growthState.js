@@ -17,21 +17,24 @@ export function createGrowthState() {
   }
 }
 
-const smoothstep = (a, b, x) => {
+// Curva de quinto grado: aceleración y frenado sin cambios bruscos.
+const smootherstep = (a, b, x) => {
   const t = MathUtils.clamp((x - a) / (b - a), 0, 1)
-  return t * t * (3 - 2 * t)
+  return t * t * t * (t * (t * 6 - 15) + 10)
 }
 
 // Avanza el estado a partir del progreso real del scroll.
 export function stepGrowth(state, target, dt, reduced) {
-  state.shown = reduced ? target : MathUtils.damp(state.shown, target, 5, dt)
+  // Amortiguación suave: el valor mostrado persigue al scroll sin tirones.
+  state.shown = reduced ? target : MathUtils.damp(state.shown, target, 3.2, dt)
   if (Math.abs(state.shown - target) < 1e-5) state.shown = target
 
   const s = state.shown * LAST
   const i = Math.min(Math.floor(s), LAST - 1)
   const f = s - i
+  // Meseta corta para leer el panel; el resto del recorrido es movimiento continuo.
   // En movimiento reducido salta de etapa en etapa.
-  const t = reduced ? (f < 0.5 ? 0 : 1) : smoothstep(0.25, 0.75, f)
+  const t = reduced ? (f < 0.5 ? 0 : 1) : smootherstep(0.1, 0.9, f)
 
   state.s = s
   state.i = i
