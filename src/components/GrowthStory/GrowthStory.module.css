@@ -1,6 +1,7 @@
 .story {
   position: relative;
   height: calc(var(--stages) * 100svh);
+  background: #3b2a1e;
 }
 
 .sticky {
@@ -13,7 +14,22 @@
 .stage {
   position: absolute;
   inset: 0;
+}
+
+.stage canvas {
+  touch-action: pan-y;
+}
+
+.loader {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
   background: #3b2a1e;
+}
+
+.loader svg {
+  width: min(40vw, 220px);
 }
 
 .hero {
@@ -23,6 +39,11 @@
   bottom: var(--s-8);
   max-width: 44rem;
   color: var(--cielo);
+  text-shadow: 0 1px 18px rgb(20 12 8 / 0.5);
+}
+
+.hero[hidden] {
+  display: none;
 }
 
 .title {
@@ -33,4 +54,64 @@
   margin-top: var(--s-5);
   font-size: var(--t-21);
   line-height: 1.45;
+}
+
+.panel {
+  position: absolute;
+  left: max(var(--s-5), calc((100vw - 90rem) / 2));
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(26rem, calc(100% - 2 * var(--s-5)));
+  padding: var(--s-5);
+  background: rgb(238 242 240 / 0.94);
+  border: var(--borde);
+  border-radius: var(--radio);
+}
+
+.code {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-bottom: var(--s-3);
+  font-size: var(--t-14);
+}
+
+.code span:first-child {
+  font-weight: 800;
+  font-stretch: 125%;
+  color: var(--curasemilla-oscuro);
+}
+
+.stageName {
+  margin-bottom: var(--s-3);
+  font-size: var(--t-28);
+  line-height: 1;
+}
+
+.count {
+  margin-top: var(--s-4);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--tierra-15);
+}
+
+.count strong {
+  font-size: var(--t-28);
+  font-stretch: 125%;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .panel {
+    top: auto;
+    bottom: var(--s-4);
+    left: var(--s-4);
+    right: var(--s-4);
+    width: auto;
+    transform: none;
+    padding: var(--s-4);
+  }
+
+  .hero {
+    bottom: var(--s-7);
+  }
 }

@@ -159,6 +159,9 @@ export function cameraFrame(i, crop, head, ear) {
   }
 }
 
+// Campo visual por etapa: más cerrado bajo tierra para ver la semilla de cerca.
+export const FOV_FRAMES = [22, 31, 34, 38, 38, 38, 38, 38, 38, 38, 40]
+
 // Cielo, niebla y luz por etapa
 export const SKY_FRAMES = [
   { sky: '#3b2a1e', fog: [0.6, 2.5], sun: 0.25, hemi: 0.55, sunColor: '#ffcf9a' },

@@ -1,0 +1,121 @@
+import { useLayoutEffect, useMemo, useRef } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Color, Fog, Vector3 } from 'three'
+import { CROPS } from '../data/crops.js'
+import { SKY_FRAMES } from '../data/stages.js'
+import { createGrowthState, GrowthContext, stepGrowth } from './growthState.js'
+import { buildLayout } from './plantLayout.js'
+import CameraRig from './CameraRig.jsx'
+import Rhizotron from './Rhizotron.jsx'
+import Plant from './Plant.jsx'
+
+// Lee el progreso del scroll y actualiza el estado compartido antes que el resto.
+function Driver({ state, progressRef, reduced, onStage }) {
+  const lastStage = useRef(-1)
+  useFrame((_, dt) => {
+    stepGrowth(state, progressRef.current, Math.min(dt, 0.1), reduced)
+    if (state.stage !== lastStage.current) {
+      lastStage.current = state.stage
+      onStage?.(state.stage)
+    }
+  }, -1)
+  return null
+}
+
+const SKY_COLORS = SKY_FRAMES.map((f) => ({ sky: new Color(f.sky), sun: new Color(f.sunColor) }))
+
+// Cielo, niebla y luz que cambian con la etapa.
+function SkyAndLight({ state, shadows }) {
+  const scene = useThree((s) => s.scene)
+  const camera = useThree((s) => s.camera)
+  const sun = useRef()
+  const hemi = useRef()
+  const lamp = useRef()
+  const fx = useMemo(() => {
+    const bg = new Color(SKY_FRAMES[0].sky)
+    return { bg, fog: new Fog(bg.clone(), 1, 10), lampOffset: new Vector3(-0.05, 0.06, 0.02) }
+  }, [])
+
+  // Asignar en un efecto (no en useMemo): en StrictMode el memo corre dos veces.
+  useLayoutEffect(() => {
+    scene.background = fx.bg
+    scene.fog = fx.fog
+    return () => {
+      scene.background = null
+      scene.fog = null
+    }
+  }, [scene, fx])
+
+  useFrame(() => {
+    const { i, t } = state
+    const a = SKY_FRAMES[i]
+    const b = SKY_FRAMES[i + 1]
+    fx.bg.copy(SKY_COLORS[i].sky).lerp(SKY_COLORS[i + 1].sky, t)
+    fx.fog.color.copy(fx.bg)
+    fx.fog.near = a.fog[0] + (b.fog[0] - a.fog[0]) * t
+    fx.fog.far = a.fog[1] + (b.fog[1] - a.fog[1]) * t
+    sun.current.intensity = a.sun + (b.sun - a.sun) * t
+    sun.current.color.copy(SKY_COLORS[i].sun).lerp(SKY_COLORS[i + 1].sun, t)
+    hemi.current.intensity = a.hemi + (b.hemi - a.hemi) * t
+    // El sol baja hacia la tarde en la madurez
+    const s = state.s
+    const elev = s < 2 ? 0.35 : s < 8 ? 0.35 + Math.min(1, (s - 2) / 3) * 0.6 : 0.95 - Math.min(1, (s - 8) / 1.5) * 0.55
+    sun.current.position.set(-3 * Math.cos(elev), 4 * Math.sin(elev) + 0.6, 2.2)
+
+    // Lámpara cálida del foso de observación: ilumina el vidrio mientras estamos bajo tierra.
+    const under = Math.min(1, Math.max(0, 1 - (s - 1.6) / 1.2))
+    lamp.current.intensity = under * 2.6
+    lamp.current.visible = under > 0.01
+    lamp.current.position.copy(camera.position).add(fx.lampOffset)
+  })
+
+  return (
+    <>
+      <pointLight ref={lamp} color="#ffc98f" decay={0} distance={0} />
+      {/* Luz fija del foso: deja leer las raíces cuando la cámara ya está arriba */}
+      <pointLight position={[0.1, -0.22, 0.55]} color="#ffd9ab" intensity={0.9} decay={2} distance={1.3} />
+      <hemisphereLight ref={hemi} args={['#dfeaf0', '#5a4330', 0.6]} />
+      <directionalLight
+        ref={sun}
+        position={[-2, 3, 2]}
+        intensity={1}
+        castShadow={shadows}
+        shadow-mapSize={[1024, 1024]}
+        shadow-camera-left={-1.4}
+        shadow-camera-right={1.4}
+        shadow-camera-top={2.6}
+        shadow-camera-bottom={-0.4}
+        shadow-camera-near={0.1}
+        shadow-camera-far={12}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.01}
+      />
+    </>
+  )
+}
+
+export default function GrowthScene({ cropId, progressRef, reduced = false, mobile = false, onStage }) {
+  const state = useMemo(() => createGrowthState(), [])
+  const crop = CROPS[cropId]
+  const quality = mobile ? 'low' : 'high'
+  const layout = useMemo(() => buildLayout(crop), [crop])
+  const shadows = !mobile
+
+  return (
+    <Canvas
+      aria-hidden="true"
+      dpr={[1, 1.75]}
+      shadows={shadows ? 'percentage' : false}
+      camera={{ fov: 38, near: 0.003, far: 220, position: [0, -crop.d, 0.12] }}
+      gl={{ antialias: true, powerPreference: 'high-performance' }}
+    >
+      <GrowthContext.Provider value={state}>
+        <Driver state={state} progressRef={progressRef} reduced={reduced} onStage={onStage} />
+        <SkyAndLight state={state} shadows={shadows} />
+        <CameraRig crop={crop} layout={layout} />
+        <Rhizotron rowSpacing={crop.surco} quality={quality} />
+        <Plant crop={crop} layout={layout} quality={quality} />
+      </GrowthContext.Provider>
+    </Canvas>
+  )
+}
