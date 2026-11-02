@@ -1,0 +1,78 @@
+.group {
+  display: flex;
+  gap: var(--s-1);
+  padding: var(--s-1);
+  background: rgb(238 242 240 / 0.92);
+  border: var(--borde);
+  border-radius: calc(var(--radio) + 2px);
+  backdrop-filter: blur(6px);
+}
+
+.option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 2.75rem;
+  padding: 0 var(--s-3) 0 var(--s-2);
+  border: 0;
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--tierra);
+  font-size: var(--t-14);
+  font-weight: 600;
+  font-stretch: 105%;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.option:hover {
+  background: var(--tierra-15);
+}
+
+.option[aria-checked='true'] {
+  background: var(--tierra);
+  color: var(--cielo);
+}
+
+/* La semilla tratada marca el cultivo elegido */
+.option[aria-checked='true']::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--curasemilla);
+}
+
+.icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+}
+
+@media (max-width: 760px) {
+  .group {
+    width: 100%;
+    gap: 2px;
+    padding: 3px;
+  }
+
+  .option {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    min-height: 3.25rem;
+    padding: var(--s-1) 0;
+    font-stretch: 82%;
+  }
+
+  .option[aria-checked='true']::after {
+    top: 4px;
+    right: 4px;
+  }
+}

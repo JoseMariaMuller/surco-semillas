@@ -174,5 +174,5 @@ export const SKY_FRAMES = [
   { sky: '#b4d2e2', fog: [8, 50], sun: 2.0, hemi: 0.9, sunColor: '#fffaf0' },
   { sky: '#d6d4bf', fog: [8, 50], sun: 1.8, hemi: 0.85, sunColor: '#ffe9c2' },
   { sky: '#e6c486', fog: [8, 45], sun: 1.7, hemi: 0.75, sunColor: '#ffcf86' },
-  { sky: '#e9c88e', fog: [10, 70], sun: 1.6, hemi: 0.75, sunColor: '#ffcf86' },
+  { sky: '#e9c88e', fog: [7, 46], sun: 1.6, hemi: 0.75, sunColor: '#ffcf86' },
 ]

@@ -13,7 +13,7 @@ export function createGrowthState() {
     stage: 0, // etapa más cercana (para la UI)
     g: Object.fromEntries(GROWTH_KEYS.map((k) => [k, 0])),
     time: 0,
-    wind: 1,
+    swap: 1, // transición entre cultivos (0..1)
   }
 }
 

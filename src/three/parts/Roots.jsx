@@ -65,7 +65,7 @@ export default function Roots({ layout, quality }) {
     const tipGeo = new SphereGeometry(1, 10, 8)
     const roots = layout.roots.map((r) => ({
       ...r,
-      geo: rootTube(r.curve, hi ? 140 : 70, R * (r.primary ? 1.15 : 1), hi ? 6 : 4),
+      geo: rootTube(r.curve, hi ? 140 : 70, R * (r.primary ? 1.15 : r.crown ? 1.45 : 1), hi ? 6 : 4),
       lats: r.laterals.map((l) => ({
         ...l,
         geo: rootTube(l.curve, hi ? 12 : 6, R * 0.45, hi ? 4 : 3),
@@ -100,7 +100,7 @@ export default function Roots({ layout, quality }) {
         tip.visible = drawn > 0
         if (tip.visible) {
           tip.position.copy(r.curve.getPointAt(Math.min(drawn, 1)))
-          const rad = built.R * (r.primary ? 1.15 : 1) * (1 - 0.65 * drawn) * 0.95
+          const rad = built.R * (r.primary ? 1.15 : r.crown ? 1.45 : 1) * (1 - 0.65 * drawn) * 0.95
           tip.scale.setScalar(rad)
         }
       }

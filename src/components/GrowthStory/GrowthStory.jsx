@@ -4,6 +4,7 @@ import { getStages, STAGE_COUNT } from '../../data/stages.js'
 import { useScrollProgress } from '../../hooks/useScrollProgress.js'
 import { useReducedMotion } from '../../hooks/useReducedMotion.js'
 import SeedLoader from './SeedLoader.jsx'
+import CropSelector from '../CropSelector/CropSelector.jsx'
 import styles from './GrowthStory.module.css'
 
 const GrowthScene = lazy(() => import('../../three/GrowthScene.jsx'))
@@ -13,7 +14,7 @@ const isMobile = () =>
 
 const fmt = new Intl.NumberFormat('es-AR')
 
-export default function GrowthStory({ cropId }) {
+export default function GrowthStory({ cropId, onCropChange }) {
   const sectionRef = useRef(null)
   const progressRef = useScrollProgress(sectionRef)
   const reduced = useReducedMotion()
@@ -44,12 +45,22 @@ export default function GrowthStory({ cropId }) {
           </Suspense>
         </div>
 
+        <div className={styles.selector}>
+          <CropSelector value={cropId} onChange={onCropChange} />
+        </div>
+
         <div className={styles.hero} hidden={stage !== 0}>
           <h1 id="hero-titulo" className={styles.title}>
             De una semilla a una hectárea.
           </h1>
           <p className={styles.lead}>
             Bajá y mirá crecer {crop.nombre.toLowerCase()} desde la tierra hasta el lote, etapa por etapa.
+          </p>
+          <p className={styles.hint}>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M8 2v11M3.5 8.5 8 13l4.5-4.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
+            Bajá para empezar
           </p>
         </div>
 

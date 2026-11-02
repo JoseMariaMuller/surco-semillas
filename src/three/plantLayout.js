@@ -97,7 +97,33 @@ function buildRoots(crop, m, rng) {
     }
     roots.push({ curve, delay, primary: isPrimary, laterals })
   }
+
+  // Maíz: raíces de la corona, que salen de los nudos de la base desde V6-V8
+  if (crop.id === 'maiz') {
+    const crownY = -0.018
+    for (let j = 0; j < 6; j++) {
+      const side = j % 2 === 0 ? 1 : -1
+      const start = new Vector3(side * 0.006, crownY, rng.range(-0.004, 0.004))
+      const angle = side * (0.75 + 0.12 * Math.floor(j / 2) + rng.range(-0.1, 0.1))
+      const curve = rootPath(rng, start, angle, rng.range(0.24, 0.34), 12)
+      const laterals = []
+      for (let k = 0; k < 6; k++) {
+        const u = 0.2 + k * 0.12
+        const p0 = curve.getPointAt(u)
+        const tan = curve.getTangentAt(u)
+        const ang = Math.atan2(tan.x, -tan.y) + (k % 2 ? 1 : -1) * rng.range(0.9, 1.3)
+        laterals.push({ u, curve: rootPath(rng, p0, ang, rng.range(0.02, 0.05), 4, 0.02) })
+      }
+      roots.push({ curve, delay: 0.55 + j * 0.035, primary: false, crown: true, laterals })
+    }
+  }
   return roots
+}
+
+// Centro de la cabeza ya crecida, para la cámara.
+function headCenterFor(crop, stemLen, headLen) {
+  const k = crop.cabeza === 'panoja-abierta' ? 0.42 : 0.5
+  return [0, stemLen + headLen * k, 0]
 }
 
 export function buildLayout(crop) {
@@ -139,11 +165,53 @@ export function buildLayout(crop) {
     headLen,
     leaves,
     roots: buildRoots(crop, m, rng),
-    headCenter: [0, stemLen + headLen * 0.5, 0],
-    earCenter: [0, crop.H * 0.45, 0],
+    headCenter: headCenterFor(crop, stemLen, headLen),
     headAzimuth: rng.range(0, Math.PI * 2),
+    ...earLayout(crop, m, stemLen),
+    tillers: tillerPlacements(crop, rng),
   }
 }
+
+// Choclo: en el nudo más cercano al 45 % de la altura, mirando hacia la cámara.
+export const EAR = { len: 0.2, radius: 0.024, shank: 0.035, tilt: 0.42 }
+function earLayout(crop, m, stemLen) {
+  if (crop.id !== 'maiz') return { earNode: -1, earAzimuth: 0, earCenter: [0, crop.H * 0.45, 0] }
+  let earNode = 0
+  let best = Infinity
+  m.nodes.forEach((f, i) => {
+    const dd = Math.abs(f * stemLen - crop.H * 0.45)
+    if (dd < best) {
+      best = dd
+      earNode = i
+    }
+  })
+  const earAzimuth = -Math.PI / 4
+  const along = EAR.shank + EAR.len / 2
+  const lx = m.stemR + Math.sin(EAR.tilt) * along
+  const ly = m.nodes[earNode] * stemLen + Math.cos(EAR.tilt) * along
+  // rotación en Y: x local -> (cos a, 0, -sin a)
+  const earCenter = [lx * Math.cos(earAzimuth), ly, -lx * Math.sin(earAzimuth)]
+  return { earNode, earAzimuth, earCenter }
+}
+
+// Macollos: copias del vástago principal, más bajas y abiertas en abanico.
+function tillerPlacements(crop, rng) {
+  const n = crop.macollos
+  const out = []
+  const base = rng.range(0, Math.PI * 2)
+  for (let k = 0; k < n; k++) {
+    const ay = base + (k / n) * Math.PI * 2 + rng.range(-0.3, 0.3)
+    const tilt = rng.range(0.16, 0.3)
+    const s = rng.range(0.78, 0.9)
+    const q = new Quaternion().setFromEuler(new Euler(0, ay, tilt, 'YZX'))
+    const pos = new Vector3(Math.cos(ay) * 0.004, 0, -Math.sin(ay) * 0.004)
+    out.push(new Matrix4().compose(pos, q, new Vector3(s, s * rng.range(0.86, 0.95), s)))
+  }
+  return out
+}
+
+// Distancia ponderada que ordena el cultivo vecino: prioriza lo que está detrás.
+export const neighborDistance = (x, z) => Math.hypot(x * 0.8, z > 0 ? z * 1.5 : z * 0.65)
 
 /**
  * Posiciones del cultivo vecino: hileras a la distancia entre surcos del cultivo,
@@ -168,15 +236,19 @@ export function neighborPlacements(crop, count) {
       const inPit = Math.abs(x) < PIT.halfW + 0.06 && zz > -0.08 && zz < PIT.front + 0.08
       if (inPit) continue
       // Prioridad: cerca y, sobre todo, detrás
-      const d = Math.hypot(x * 0.8, zz > 0 ? zz * 1.5 : zz * 0.65)
+      const d = neighborDistance(x, zz)
       cands.push({ x, z: zz, d })
     }
   }
   cands.sort((a, b) => a.d - b.d)
-  return cands.slice(0, count).map(({ x, z }) => {
+  const picked = cands.slice(0, count)
+  const out = picked.map(({ x, z }) => {
     const s = rng.range(0.82, 1.08)
     const q = new Quaternion().setFromEuler(new Euler(rng.range(-0.05, 0.05), rng.range(0, Math.PI * 2), rng.range(-0.05, 0.05)))
     return new Matrix4().compose(new Vector3(x, 0, z), q, new Vector3(s, s, s))
   })
+  // Hasta dónde llega el cultivo vecino (la hectárea empieza ahí)
+  out.reach = picked.length ? picked[picked.length - 1].d : 0
+  return out
 }
 

@@ -63,8 +63,6 @@ export default function Rhizotron({ rowSpacing = 0.175, quality = 'high' }) {
     soil.wrapT = ClampToEdgeWrapping
 
     const field = createFieldTexture({ px: quality === 'high' ? 512 : 256 })
-    const tile = rowSpacing * 4
-    field.repeat.set(1 / tile, 1 / tile)
 
     const sheen = createGlassSheenTexture()
 
@@ -126,7 +124,13 @@ export default function Rhizotron({ rowSpacing = 0.175, quality = 'high' }) {
         ground: groundGeometry(),
       },
     }
-  }, [rowSpacing, quality])
+  }, [quality])
+
+  // Surcos a la distancia del cultivo, sin regenerar las texturas
+  useEffect(() => {
+    const tile = rowSpacing * 4
+    assets.textures[1].repeat.set(1 / tile, 1 / tile)
+  }, [assets, rowSpacing])
 
   useEffect(
     () => () => {

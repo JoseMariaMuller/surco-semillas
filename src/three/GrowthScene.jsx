@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useMemo, useRef } from 'react'
+import { memo, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Color, Fog, Vector3 } from 'three'
 import { CROPS } from '../data/crops.js'
@@ -8,6 +8,7 @@ import { buildLayout } from './plantLayout.js'
 import CameraRig from './CameraRig.jsx'
 import Rhizotron from './Rhizotron.jsx'
 import Plant from './Plant.jsx'
+import { WIND } from './wind.js'
 
 // Lee el progreso del scroll y actualiza el estado compartido antes que el resto.
 function Driver({ state, progressRef, reduced, onStage }) {
@@ -54,6 +55,13 @@ function SkyAndLight({ state, shadows }) {
     fx.fog.color.copy(fx.bg)
     fx.fog.near = a.fog[0] + (b.fog[0] - a.fog[0]) * t
     fx.fog.far = a.fog[1] + (b.fog[1] - a.fog[1]) * t
+    // En el lote, la niebla acompaña la distancia de la cámara (cultivos altos la alejan más)
+    const w = Math.min(1, Math.max(0, state.s - 8.5))
+    if (w > 0) {
+      const dist = camera.position.length()
+      fx.fog.near += (Math.max(fx.fog.near, dist * 0.45) - fx.fog.near) * w
+      fx.fog.far += (Math.max(fx.fog.far, dist * 2.3) - fx.fog.far) * w
+    }
     sun.current.intensity = a.sun + (b.sun - a.sun) * t
     sun.current.color.copy(SKY_COLORS[i].sun).lerp(SKY_COLORS[i + 1].sun, t)
     hemi.current.intensity = a.hemi + (b.hemi - a.hemi) * t
@@ -97,9 +105,7 @@ function SkyAndLight({ state, shadows }) {
 // memo: el cambio de etapa re-renderiza la historia, pero la escena no lo necesita.
 export default memo(function GrowthScene({ cropId, progressRef, reduced = false, mobile = false, onStage }) {
   const state = useMemo(() => createGrowthState(), [])
-  const crop = CROPS[cropId]
   const quality = mobile ? 'low' : 'high'
-  const layout = useMemo(() => buildLayout(crop), [crop])
   const shadows = !mobile
 
   return (
@@ -107,16 +113,63 @@ export default memo(function GrowthScene({ cropId, progressRef, reduced = false,
       aria-hidden="true"
       dpr={[1, 1.75]}
       shadows={shadows ? 'percentage' : false}
-      camera={{ fov: 38, near: 0.003, far: 220, position: [0, -crop.d, 0.12] }}
+      camera={{ fov: 38, near: 0.003, far: 220, position: [0, -CROPS[cropId].d, 0.12] }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
     >
       <GrowthContext.Provider value={state}>
         <Driver state={state} progressRef={progressRef} reduced={reduced} onStage={onStage} />
         <SkyAndLight state={state} shadows={shadows} />
-        <CameraRig crop={crop} layout={layout} reduced={reduced} />
-        <Rhizotron rowSpacing={crop.surco} quality={quality} />
-        <Plant crop={crop} layout={layout} quality={quality} />
+        <Crops cropId={cropId} state={state} quality={quality} reduced={reduced} />
       </GrowthContext.Provider>
     </Canvas>
   )
 })
+
+const SWAP_TIME = 0.3 // segundos que tarda en encogerse (y en crecer) la planta al cambiar de cultivo
+const easeInOut = (x) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2)
+
+/**
+ * Cambio de cultivo sin perder la etapa: la planta actual se encoge en ~300 ms,
+ * se desmonta (sus componentes liberan geometrías y materiales con dispose())
+ * y crece la nueva. `state.swap` (0..1) lo leen la planta, las vecinas y la hectárea.
+ */
+function Crops({ cropId, state, quality, reduced }) {
+  const [shownId, setShownId] = useState(cropId)
+  const tr = useRef({ k: 1, pending: false })
+  const crop = CROPS[shownId]
+  const layout = useMemo(() => buildLayout(crop), [crop])
+
+  // Si el cambio ya se aplicó, la nueva planta crece
+  useLayoutEffect(() => {
+    tr.current.pending = false
+  }, [shownId])
+
+  useFrame((_, dt) => {
+    const t = tr.current
+    if (cropId !== shownId) {
+      if (reduced) t.k = 0
+      else t.k = Math.max(0, t.k - dt / SWAP_TIME)
+      if (t.k === 0 && !t.pending) {
+        t.pending = true
+        setShownId(cropId)
+      }
+    } else if (!t.pending && t.k < 1) {
+      t.k = reduced ? 1 : Math.min(1, t.k + dt / SWAP_TIME)
+    }
+    const e = easeInOut(t.k)
+    state.swap = e
+
+    // Viento: amplitud proporcional a la altura del cultivo, más fuerte en el lote abierto
+    WIND.uWindTime.value += reduced ? 0 : dt
+    WIND.uWindH.value = crop.H
+    WIND.uWindAmp.value = reduced ? 0 : crop.H * 0.03 * (1 + 0.6 * state.g.campo) * e
+  }, -1)
+
+  return (
+    <>
+      <CameraRig crop={crop} layout={layout} reduced={reduced} />
+      <Rhizotron rowSpacing={crop.surco} quality={quality} />
+      <Plant key={shownId} crop={crop} layout={layout} quality={quality} reduced={reduced} />
+    </>
+  )
+}

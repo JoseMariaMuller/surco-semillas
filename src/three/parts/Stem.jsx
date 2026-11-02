@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { Color, CylinderGeometry, MeshStandardMaterial } from 'three'
 import { useGrowth } from '../growthState.js'
 import Leaf from './Leaf.jsx'
+import { applyWind } from '../wind.js'
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v))
 const PALE = new Color('#e9e4bd')
@@ -36,12 +37,13 @@ export function Coleoptile({ crop, layout, quality }) {
 
 /**
  * Vástago: tallo con nudos, hojas y la cabeza arriba.
- * `head` se renderiza en un grupo que sigue la punta del tallo.
+ * `head` se renderiza en un grupo que sigue la punta del tallo y `ear` (choclo) en su nudo.
  */
-export default function Culm({ layout, palette, quality, head, scale = 1, groupRef }) {
+export default function Culm({ layout, palette, quality, head, ear, scale = 1, groupRef }) {
   const g = useGrowth()
   const stemRef = useRef()
   const topRef = useRef()
+  const earRef = useRef()
   const leafRefs = useRef([])
   const nodeRefs = useRef([])
   const { m, stemLen, leaves } = layout
@@ -53,7 +55,7 @@ export default function Culm({ layout, palette, quality, head, scale = 1, groupR
     const nodeGeo = new CylinderGeometry(m.stemR * 1.28, m.stemR * 1.28, m.stemR * 2.2, seg, 1)
     const green = new Color(palette.hoja).lerp(new Color('#d8e6a8'), 0.18)
     const ripe = new Color(palette.maduro)
-    const stemMat = new MeshStandardMaterial({ color: green.clone(), roughness: 0.5 })
+    const stemMat = applyWind(new MeshStandardMaterial({ color: green.clone(), roughness: 0.5 }))
     return { stemGeo, nodeGeo, stemMat, green, ripe }
   }, [m, palette, quality])
 
@@ -94,6 +96,9 @@ export default function Culm({ layout, palette, quality, head, scale = 1, groupR
       if (grp) grp.position.y = leaves[i].node * nodeScale - 0.004
     })
 
+    // El choclo (maíz) sigue a su nudo
+    if (earRef.current) earRef.current.position.y = m.nodes[layout.earNode] * nodeScale
+
     stemMat.color.copy(green).lerp(ripe, clamp01(madurez * 1.2 - 0.1))
   })
 
@@ -122,6 +127,11 @@ export default function Culm({ layout, palette, quality, head, scale = 1, groupR
         </group>
       ))}
       <group ref={topRef}>{head}</group>
+      {ear && (
+        <group ref={earRef} rotation-y={layout.earAzimuth}>
+          {ear}
+        </group>
+      )}
     </group>
   )
 }

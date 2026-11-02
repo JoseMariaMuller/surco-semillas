@@ -22,9 +22,11 @@ export default function CameraRig({ crop, layout, reduced = false }) {
     }
   }, [crop, layout])
   const tmp = useMemo(() => ({ pos: new Vector3(), look: new Vector3(), off: new Vector3() }), [])
+  // Posición real de la cámara: persigue al objetivo (suaviza el cambio de cultivo)
+  const cur = useMemo(() => ({ pos: new Vector3(), look: new Vector3(), init: false }), [])
   const view = useMemo(() => ({ w: 0, h: 0, x: 0, y: 0 }), [])
 
-  useFrame((state) => {
+  useFrame((state, dt) => {
     const { i, t } = g
     if (reduced) {
       // Movimiento reducido: saltos directos entre fotogramas.
@@ -41,15 +43,25 @@ export default function CameraRig({ crop, layout, reduced = false }) {
     const aspect = width / height
     const narrow = width <= 760 || aspect < 0.8
 
-    // En pantallas angostas, alejar para que la planta entre completa.
+    // En pantallas angostas, alejar para que la planta entre completa
+    // (no en el lote final: ahí no hay una planta que encuadrar).
     if (aspect < 0.8) {
-      const k = 1 + 0.5 * Math.min(1, (0.8 - aspect) / 0.25)
+      const k = 1 + 0.5 * Math.min(1, (0.8 - aspect) / 0.25) * (1 - 0.85 * g.g.campo)
       tmp.off.subVectors(tmp.pos, tmp.look).multiplyScalar(k)
       tmp.pos.copy(tmp.look).add(tmp.off)
     }
 
-    camera.position.copy(tmp.pos)
-    camera.lookAt(tmp.look)
+    if (!cur.init || reduced) {
+      cur.pos.copy(tmp.pos)
+      cur.look.copy(tmp.look)
+      cur.init = true
+    } else {
+      const a = 1 - Math.exp(-9 * Math.min(dt, 0.1))
+      cur.pos.lerp(tmp.pos, a)
+      cur.look.lerp(tmp.look, a)
+    }
+    camera.position.copy(cur.pos)
+    camera.lookAt(cur.look)
 
     let dirty = false
     const fov = FOV_FRAMES[i] + (FOV_FRAMES[i + 1] - FOV_FRAMES[i]) * t
@@ -59,7 +71,7 @@ export default function CameraRig({ crop, layout, reduced = false }) {
     }
 
     // Plano cercano proporcional a la distancia: precisión en primeros planos y en el lote.
-    const dist = tmp.pos.distanceTo(tmp.look)
+    const dist = cur.pos.distanceTo(cur.look)
     const near = Math.min(0.2, Math.max(0.002, dist * 0.03))
     if (Math.abs(camera.near - near) > 1e-4) {
       camera.near = near

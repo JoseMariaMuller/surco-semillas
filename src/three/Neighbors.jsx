@@ -4,15 +4,30 @@ import { InstancedMesh, Matrix4 } from 'three'
 import { useGrowth } from './growthState.js'
 
 /**
- * Replica las mallas del vástago principal con InstancedMesh: comparte geometría y
- * material, así que crecen, maduran y cambian de color exactamente igual.
+ * Replica las mallas de un vástago con InstancedMesh: comparte geometría y
+ * material, así que crecen, maduran y se mecen exactamente igual.
+ * Se usa para los macollos (alrededor de la planta) y para el cultivo vecino.
+ * - scaleBy: clave del crecimiento que escala cada copia (p. ej. 'macollos')
+ * - castShadow: si las copias proyectan sombra
+ * Las mallas con userData.noMirror no se copian.
  */
-export default function Neighbors({ sourceRef, placements }) {
+export default function Neighbors({ sourceRef, placements, scaleBy = null, castShadow = false }) {
   const g = useGrowth()
   const group = useRef()
   const st = useMemo(
-    () => ({ mirrors: null, last: -1, inv: new Matrix4(), rel: new Matrix4(), base: new Matrix4(), tmp: new Matrix4(), out: new Matrix4() }),
-    [],
+    () => ({
+      mirrors: null,
+      last: -1,
+      lastSwap: -1,
+      inv: new Matrix4(),
+      rel: new Matrix4(),
+      base: new Matrix4(),
+      tmp: new Matrix4(),
+      out: new Matrix4(),
+      sc: new Matrix4(),
+      scaled: placements.map((p) => p.clone()),
+    }),
+    [placements],
   )
 
   useEffect(
@@ -28,15 +43,15 @@ export default function Neighbors({ sourceRef, placements }) {
 
   useFrame(() => {
     const root = sourceRef.current
-    if (!root || !group.current) return
+    if (!root || !group.current || placements.length === 0) return
 
     if (!st.mirrors) {
       st.mirrors = []
       root.traverse((obj) => {
-        if (!obj.isMesh) return
+        if (!obj.isMesh || obj.userData.noMirror) return
         const per = obj.isInstancedMesh ? obj.instanceMatrix.count : 1
         const mesh = new InstancedMesh(obj.geometry, obj.material, per * placements.length)
-        mesh.castShadow = obj.castShadow
+        mesh.castShadow = castShadow && obj.castShadow
         mesh.frustumCulled = false
         mesh.count = 0
         group.current.add(mesh)
@@ -45,12 +60,24 @@ export default function Neighbors({ sourceRef, placements }) {
     }
 
     // Solo recalcular cuando cambió el crecimiento
-    if (g.s === st.last) return
+    if (g.s === st.last && g.swap === st.lastSwap) return
     st.last = g.s
+    st.lastSwap = g.swap
+
+    // Escala dinámica de cada copia (los macollos crecen con `macollos`)
+    // y todas se encogen con la transición entre cultivos (swap)
+    let P = placements
+    const k = (scaleBy ? g.g[scaleBy] : 1) * g.swap
+    group.current.visible = k > 0.001
+    if (!group.current.visible) return
+    if (k < 0.9999) {
+      st.sc.makeScale(k, k, k)
+      placements.forEach((p, i) => st.scaled[i].multiplyMatrices(p, st.sc))
+      P = st.scaled
+    }
 
     root.updateMatrixWorld(true)
     st.inv.copy(root.matrixWorld).invert()
-    const P = placements
     for (const m of st.mirrors) {
       const { src, mesh } = m
       let visible = true

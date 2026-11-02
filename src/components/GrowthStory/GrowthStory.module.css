@@ -32,6 +32,27 @@
   width: min(40vw, 220px);
 }
 
+.selector {
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--header-h) + var(--s-3));
+  left: max(var(--s-5), calc((100vw - 90rem) / 2));
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-6);
+  font-size: var(--t-14);
+  font-weight: 600;
+}
+
+.hint svg {
+  width: 1rem;
+  height: 1rem;
+}
+
 .hero {
   position: absolute;
   left: max(var(--s-5), calc((100vw - 90rem) / 2));
@@ -112,6 +133,12 @@
 }
 
 @media (max-width: 760px) {
+  .selector {
+    left: var(--s-3);
+    right: var(--s-3);
+    top: calc(var(--header-h) + var(--s-2));
+  }
+
   .panel {
     top: auto;
     bottom: var(--s-4);

@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { Color, DoubleSide, MeshStandardMaterial } from 'three'
 import { useGrowth } from '../growthState.js'
 import { createLeafGeometry, shapeLeaf } from './leafGeometry.js'
+import { applyWind } from '../wind.js'
 
 const DRY_TINT = new Color('#b59a68')
 const clamp01 = (v) => Math.min(1, Math.max(0, v))
@@ -18,12 +19,14 @@ export default function Leaf({ leaf, count, palette, quality, stemR }) {
     const geometry = createLeafGeometry(quality === 'high' ? 18 : 10)
     const green = new Color(palette.hoja)
     const ripe = new Color(palette.maduro)
-    const material = new MeshStandardMaterial({
-      color: green.clone(),
-      vertexColors: true,
-      side: DoubleSide,
-      roughness: 0.62,
-    })
+    const material = applyWind(
+      new MeshStandardMaterial({
+        color: green.clone(),
+        vertexColors: true,
+        side: DoubleSide,
+        roughness: 0.62,
+      }),
+    )
     // `last` vive con la geometría: si se reconstruye, se vuelve a formar.
     return { geometry, material, green, ripe, last: { grow: -1, open: -1 } }
   }, [palette, quality])
