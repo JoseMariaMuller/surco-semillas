@@ -198,7 +198,8 @@ export const CROPS = {
   },
 }
 
-export const CROP_ORDER = ['maiz', 'trigo', 'cebada', 'avena', 'centeno', 'sorgo']
+// Orden de campaña: cosecha fina (invierno) y después gruesa (verano)
+export const CROP_ORDER = ['trigo', 'cebada', 'avena', 'centeno', 'maiz', 'sorgo', 'girasol', 'soja']
 export const CROP_LIST = CROP_ORDER.map((id) => CROPS[id])
 export const DEFAULT_CROP = 'trigo'
 export const NOTA_VALORES = 'Valores orientativos para la región pampeana.'

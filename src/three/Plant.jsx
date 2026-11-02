@@ -12,6 +12,7 @@ import Neighbors from './Neighbors.jsx'
 import Pollen from './Pollen.jsx'
 import Field from './Field.jsx'
 import { neighborPlacements } from './plantLayout.js'
+import Hypocotyl from './dicot/Hypocotyl.jsx'
 
 const HEADS = {
   espiga: Spike,
@@ -43,8 +44,35 @@ function SwapGroup({ children }) {
   return <group ref={ref}>{children}</group>
 }
 
+/**
+ * Dicotiledóneas (girasol y soja): semilla, raíz pivotante y, dentro del grupo que
+ * copia el cultivo vecino, el hipocótilo con los cotiledones y el tallo.
+ */
+function DicotPlant({ crop, layout, quality }) {
+  const stalkRef = useRef(null)
+  const counts = NEIGHBOR_COUNT[crop.id] ?? NEIGHBOR_COUNT.default
+  const neighbors = useMemo(() => neighborPlacements(crop, counts[quality]), [crop, counts, quality])
+  return (
+    <group>
+      <SwapGroup>
+        <Seed crop={crop} layout={layout} quality={quality} />
+        <Roots layout={layout} quality={quality} />
+        <group ref={stalkRef}>
+          <Hypocotyl crop={crop} layout={layout} quality={quality} />
+        </group>
+      </SwapGroup>
+      <Neighbors sourceRef={stalkRef} placements={neighbors} />
+    </group>
+  )
+}
+
 /** Arma la planta según el cultivo, con macollos, cultivo vecino, polen y la hectárea. */
 export default function Plant({ crop, layout, quality, reduced = false }) {
+  if (crop.tipo === 'dicotiledonea') return <DicotPlant crop={crop} layout={layout} quality={quality} reduced={reduced} />
+  return <GrassPlant crop={crop} layout={layout} quality={quality} reduced={reduced} />
+}
+
+function GrassPlant({ crop, layout, quality, reduced }) {
   const culmRef = useRef(null)
   const counts = NEIGHBOR_COUNT[crop.id] ?? NEIGHBOR_COUNT.default
   const neighbors = useMemo(() => neighborPlacements(crop, counts[quality]), [crop, counts, quality])
