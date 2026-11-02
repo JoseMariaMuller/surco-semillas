@@ -28,6 +28,18 @@
   background: #3b2a1e;
 }
 
+.loader[data-hidden='true'] {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s ease, visibility 0s linear 0.35s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader[data-hidden='true'] {
+    transition: none;
+  }
+}
+
 .loader svg {
   width: min(40vw, 220px);
 }

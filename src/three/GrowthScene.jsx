@@ -103,7 +103,15 @@ function SkyAndLight({ state, shadows }) {
 }
 
 // memo: el cambio de etapa re-renderiza la historia, pero la escena no lo necesita.
-export default memo(function GrowthScene({ cropId, progressRef, reduced = false, mobile = false, active = true, onStage }) {
+export default memo(function GrowthScene({
+  cropId,
+  progressRef,
+  reduced = false,
+  mobile = false,
+  active = true,
+  onStage,
+  onReady,
+}) {
   const state = useMemo(() => createGrowthState(), [])
   const quality = mobile ? 'low' : 'high'
   const shadows = !mobile
@@ -121,7 +129,7 @@ export default memo(function GrowthScene({ cropId, progressRef, reduced = false,
       <GrowthContext.Provider value={state}>
         <Driver state={state} progressRef={progressRef} reduced={reduced} onStage={onStage} />
         <SkyAndLight state={state} shadows={shadows} />
-        <Crops cropId={cropId} state={state} quality={quality} reduced={reduced} />
+        <Crops cropId={cropId} state={state} quality={quality} reduced={reduced} onReady={onReady} />
       </GrowthContext.Provider>
     </Canvas>
   )
@@ -135,7 +143,7 @@ const easeInOut = (x) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2)
  * se desmonta (sus componentes liberan geometrías y materiales con dispose())
  * y crece la nueva. `state.swap` (0..1) lo leen la planta, las vecinas y la hectárea.
  */
-function Crops({ cropId, state, quality, reduced }) {
+function Crops({ cropId, state, quality, reduced, onReady }) {
   const [shownId, setShownId] = useState(cropId)
   const tr = useRef({ k: 1, pending: false })
   const crop = CROPS[shownId]
@@ -170,7 +178,7 @@ function Crops({ cropId, state, quality, reduced }) {
   return (
     <>
       <CameraRig crop={crop} layout={layout} reduced={reduced} />
-      <Rhizotron rowSpacing={crop.surco} quality={quality} />
+      <Rhizotron rowSpacing={crop.surco} quality={quality} onReady={onReady} />
       <Plant key={shownId} crop={crop} layout={layout} quality={quality} reduced={reduced} />
     </>
   )

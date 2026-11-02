@@ -1,25 +1,20 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   AdditiveBlending,
   BoxGeometry,
-  ClampToEdgeWrapping,
   MeshBasicMaterial,
   MeshStandardMaterial,
   PlaneGeometry,
-  RepeatWrapping,
   Shape,
   ShapeGeometry,
 } from 'three'
-import {
-  createFieldTexture,
-  createGlassSheenTexture,
-  createSoilDetailTexture,
-  createSoilProfileTexture,
-} from './soilTexture.js'
+import { createGlassSheenTexture, loadSoilTextures } from './soilTexture.js'
 import { BOX, GLASS_Z, PIT } from './dimensions.js'
+import { DETAIL } from './soilSpec.js'
 
-// Zona del parche de detalle (m): cubre lo que encuadran las etapas 0 y 1.
-const DETAIL = { x0: -0.17, x1: 0.13, d0: 0, d1: 0.19 }
+// Colores de espera mientras se generan las texturas (casi iguales a su promedio)
+const SOIL_FLAT = '#4a3424'
+const GROUND_FLAT = '#5c4430'
 
 const TEX_W = 0.6
 const TEX_D = 0.5
@@ -56,24 +51,16 @@ function groundGeometry(size = 160) {
   return g
 }
 
-export default function Rhizotron({ rowSpacing = 0.175, quality = 'high' }) {
+export default function Rhizotron({ rowSpacing = 0.175, quality = 'high', onReady }) {
+  const loaded = useRef(null)
+  const rowSpacingRef = useRef(rowSpacing)
+  const onReadyRef = useRef(onReady)
   const assets = useMemo(() => {
-    const soil = createSoilProfileTexture({ px: quality === 'high' ? 2048 : 1024 })
-    soil.wrapS = RepeatWrapping
-    soil.wrapT = ClampToEdgeWrapping
-
-    const field = createFieldTexture({ px: quality === 'high' ? 512 : 256 })
-
     const sheen = createGlassSheenTexture()
 
     // Parche nítido alrededor de la semilla para los primeros planos bajo tierra
-    const detail = createSoilDetailTexture(soil.image, {
-      rect: DETAIL,
-      px: quality === 'high' ? 2600 : 1400,
-    })
-    detail.anisotropy = 8
     const detailMat = new MeshStandardMaterial({
-      map: detail,
+      visible: false, // hasta que llegue su textura
       roughness: 0.95,
       transparent: true,
       depthWrite: false,
@@ -83,8 +70,8 @@ export default function Rhizotron({ rowSpacing = 0.175, quality = 'high' }) {
     })
     const detailGeo = new PlaneGeometry(DETAIL.x1 - DETAIL.x0, DETAIL.d1 - DETAIL.d0)
 
-    const soilMat = new MeshStandardMaterial({ map: soil, roughness: 0.95, metalness: 0 })
-    const groundMat = new MeshStandardMaterial({ map: field, roughness: 1, metalness: 0 })
+    const soilMat = new MeshStandardMaterial({ color: SOIL_FLAT, roughness: 0.95, metalness: 0 })
+    const groundMat = new MeshStandardMaterial({ color: GROUND_FLAT, roughness: 1, metalness: 0 })
     const glassMat = new MeshStandardMaterial({
       color: '#e4f1f2',
       transparent: true,
@@ -116,7 +103,7 @@ export default function Rhizotron({ rowSpacing = 0.175, quality = 'high' }) {
     const barH = new BoxGeometry(BOX.w + 0.008, 0.006, 0.008)
 
     return {
-      textures: [soil, field, sheen, detail],
+      textures: [sheen],
       materials: { soilMat, groundMat, glassMat, sheenMat, aluMat, detailMat },
       geos: {
         detailGeo,
@@ -124,13 +111,42 @@ export default function Rhizotron({ rowSpacing = 0.175, quality = 'high' }) {
         ground: groundGeometry(),
       },
     }
-  }, [quality])
+  }, [])
+
+  // Texturas de suelo: se generan aparte (en un worker si se puede) y se aplican al llegar
+  useEffect(() => {
+    let alive = true
+    loadSoilTextures(quality).then((tex) => {
+      if (!alive) {
+        Object.values(tex).forEach((t) => t.dispose())
+        return
+      }
+      loaded.current = tex
+      const { soilMat, groundMat, detailMat } = assets.materials
+      for (const [mat, map] of [[soilMat, tex.soil], [groundMat, tex.field], [detailMat, tex.detail]]) {
+        mat.map = map
+        mat.color.set('#ffffff')
+        mat.visible = true
+        mat.needsUpdate = true
+      }
+      const tile = rowSpacingRef.current * 4
+      tex.field.repeat.set(1 / tile, 1 / tile)
+      onReadyRef.current?.()
+    })
+    return () => {
+      alive = false
+      if (loaded.current) Object.values(loaded.current).forEach((t) => t.dispose())
+      loaded.current = null
+    }
+  }, [assets, quality])
 
   // Surcos a la distancia del cultivo, sin regenerar las texturas
   useEffect(() => {
+    rowSpacingRef.current = rowSpacing
+    onReadyRef.current = onReady
     const tile = rowSpacing * 4
-    assets.textures[1].repeat.set(1 / tile, 1 / tile)
-  }, [assets, rowSpacing])
+    loaded.current?.field.repeat.set(1 / tile, 1 / tile)
+  }, [rowSpacing, onReady])
 
   useEffect(
     () => () => {

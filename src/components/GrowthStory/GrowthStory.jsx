@@ -45,6 +45,8 @@ export default function GrowthStory({ cropId, onCropChange }) {
   const [stage, setStage] = useState(0)
   const [mobile] = useState(isMobile)
   const [webgl] = useState(hasWebGL)
+  const [ready, setReady] = useState(false)
+  const onReady = useCallback(() => setReady(true), [])
   const crop = CROPS[cropId]
   const stages = useMemo(() => getStages(cropId), [cropId])
 
@@ -63,16 +65,22 @@ export default function GrowthStory({ cropId, onCropChange }) {
       <div id="inicio" className={styles.sticky}>
         <div className={styles.stage}>
           {webgl ? (
-            <Suspense fallback={<SeedLoader />}>
-              <GrowthScene
-                cropId={cropId}
-                progressRef={progressRef}
-                reduced={reduced}
-                mobile={mobile}
-                active={inView}
-                onStage={setStage}
-              />
-            </Suspense>
+            <>
+              <Suspense fallback={null}>
+                <GrowthScene
+                  cropId={cropId}
+                  progressRef={progressRef}
+                  reduced={reduced}
+                  mobile={mobile}
+                  active={inView}
+                  onStage={setStage}
+                  onReady={onReady}
+                />
+              </Suspense>
+              {/* La semilla en SVG queda arriba mientras carga la escena y hasta que
+                  el suelo tiene sus texturas */}
+              <SeedLoader hidden={ready} />
+            </>
           ) : (
             <StaticFallback crop={crop} stage={stage} />
           )}

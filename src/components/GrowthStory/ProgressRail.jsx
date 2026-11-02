@@ -38,7 +38,8 @@ export default function ProgressRail({ stages, current, progressRef, active, onG
               type="button"
               className={styles.mark}
               aria-current={s.index === current ? 'step' : undefined}
-              aria-label={`Ir a ${s.name.toLowerCase()} (${s.code})`}
+              // el nombre accesible empieza con el texto visible (el código de la etapa)
+              aria-label={`${s.short}: ir a ${s.name.toLowerCase()}`}
               onClick={() => onGo(s.index)}
             >
               <span className={styles.dot} aria-hidden="true" />
