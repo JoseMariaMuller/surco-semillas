@@ -9,7 +9,7 @@ export default function Footer() {
         <div className={styles.brand}>
           <Logo className={styles.logo} />
           <p className={styles.name}>Surco Semillas</p>
-          <p>Semilla de maíz, trigo, cebada, avena, centeno y sorgo para la región pampeana.</p>
+          <p>Semilla de trigo, cebada, avena, centeno, maíz, sorgo, girasol y soja para la región pampeana.</p>
         </div>
 
         <div>

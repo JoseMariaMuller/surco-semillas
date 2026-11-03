@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { BufferAttribute, Color, MeshStandardMaterial, SphereGeometry, TubeGeometry } from 'three'
+import { BufferAttribute, Color, InstancedMesh, Matrix4, MeshStandardMaterial, SphereGeometry, TubeGeometry } from 'three'
 import { useGrowth } from '../growthState.js'
 
 const IVORY = new Color('#e9dcc0')
+const NODULE = new Color('#d9b3a0')
+const NODULE_R = 0.0018
 const TIP = new Color('#fffaf0')
 
 // Tubo con grosor decreciente y color que se aclara hacia la punta.
@@ -63,15 +65,26 @@ export default function Roots({ layout, quality }) {
     })
     const tipMat = new MeshStandardMaterial({ color: TIP, roughness: 0.4, emissive: '#5a4a30', emissiveIntensity: 0.4 })
     const tipGeo = new SphereGeometry(1, 10, 8)
+    // Las laterales de la raíz pivotante son algo más gruesas que las raicillas de los cereales
+    const latR = layout.crop.tipo === 'dicotiledonea' ? 0.55 : 0.45
     const roots = layout.roots.map((r) => ({
       ...r,
-      geo: rootTube(r.curve, hi ? 140 : 70, R * (r.primary ? 1.15 : r.crown ? 1.45 : 1), hi ? 6 : 4),
+      geo: rootTube(r.curve, hi ? 140 : 70, R * r.radius, hi ? 6 : 4),
       lats: r.laterals.map((l) => ({
         ...l,
-        geo: rootTube(l.curve, hi ? 12 : 6, R * 0.45, hi ? 4 : 3),
+        geo: rootTube(l.curve, hi ? 12 : 6, R * latR, hi ? 4 : 3),
       })),
     }))
-    return { roots, material, tipMat, tipGeo, R, last: -1 }
+    // Nódulos (soja): bolitas sobre las laterales de arriba
+    let nodules = null
+    if (layout.nodules.length) {
+      const geo = new SphereGeometry(1, hi ? 10 : 6, hi ? 8 : 5)
+      const mat = new MeshStandardMaterial({ color: NODULE, roughness: 0.5, emissive: '#4a3020', emissiveIntensity: 0.3 })
+      const mesh = new InstancedMesh(geo, mat, layout.nodules.length)
+      mesh.frustumCulled = false
+      nodules = { geo, mat, mesh, m: new Matrix4() }
+    }
+    return { roots, material, tipMat, tipGeo, R, nodules, last: -1 }
   }, [layout, quality])
 
   useEffect(
@@ -79,6 +92,11 @@ export default function Roots({ layout, quality }) {
       built.material.dispose()
       built.tipMat.dispose()
       built.tipGeo.dispose()
+      if (built.nodules) {
+        built.nodules.geo.dispose()
+        built.nodules.mat.dispose()
+        built.nodules.mesh.dispose()
+      }
       built.roots.forEach((r) => {
         r.geo.dispose()
         r.lats.forEach((l) => l.geo.dispose())
@@ -100,16 +118,29 @@ export default function Roots({ layout, quality }) {
         tip.visible = drawn > 0
         if (tip.visible) {
           tip.position.copy(r.curve.getPointAt(Math.min(drawn, 1)))
-          const rad = built.R * (r.primary ? 1.15 : r.crown ? 1.45 : 1) * (1 - 0.65 * drawn) * 0.95
+          const rad = built.R * r.radius * (1 - 0.65 * drawn) * 0.95
           tip.scale.setScalar(rad)
         }
       }
       r.lats.forEach((l) => reveal(l.geo, clamp01((frac - l.u - 0.06) / 0.3)))
     })
+    const nod = built.nodules
+    if (nod) {
+      // aparecen en V2 (raiz 0,5) y terminan de crecer en V5
+      const k = clamp01((raiz - 0.4) / 0.3) * NODULE_R
+      nod.mesh.visible = k > 1e-5
+      layout.nodules.forEach((p, i) => {
+        // cada nódulo con su tamaño, entre 0,7 y 1,3 del radio
+        nod.m.makeScale(k * (0.7 + ((i * 37) % 7) / 10), k, k * (0.7 + ((i * 37) % 7) / 10)).setPosition(p)
+        nod.mesh.setMatrixAt(i, nod.m)
+      })
+      nod.mesh.instanceMatrix.needsUpdate = true
+    }
   })
 
   return (
     <group>
+      {built.nodules && <primitive object={built.nodules.mesh} />}
       {built.roots.map((r, i) => (
         <group key={i}>
           <mesh geometry={r.geo} material={built.material} frustumCulled={false} />

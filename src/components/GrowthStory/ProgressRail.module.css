@@ -94,7 +94,8 @@
 /* Mobile (y pantallas bajas): barra fina horizontal */
 @media (max-width: 760px), (max-height: 560px) {
   .rail {
-    top: calc(var(--header-h) + 4.4rem);
+    /* debajo del selector de cultivos, que en mobile ocupa dos filas */
+    top: calc(var(--header-h) + 7.85rem);
     left: var(--s-3);
     right: var(--s-3);
     width: auto;

@@ -107,9 +107,126 @@ function PlantSvg({ crop, g, x = 240, scale = 1, simple = false }) {
   )
 }
 
+const clamp01 = (v) => Math.min(1, Math.max(0, v))
+// Igual que en el 3D (stalkGrowth.js): hojas verdaderas después de los cotiledones,
+// alargamiento por cultivo y la soja verde hasta R7.
+const leafProgress = (g) => clamp01((g.hojas - 0.15) / 0.85)
+const stemFraction = (crop, g) =>
+  crop.id === 'soja' ? clamp01(0.2 * g.hojas + 0.35 * g.tallo + 0.45 * g.grano) : clamp01(0.25 * g.hojas + 0.75 * g.tallo)
+const senescence = (crop, g) => (crop.id === 'soja' ? clamp01((g.madurez - 0.35) / 0.65) : g.madurez)
+
+// Hoja acorazonada de girasol (base en 0,0, apunta hacia +x)
+const heart = (len) =>
+  `M0 0c${len * 0.15} ${-len * 0.45} ${len * 0.75} ${-len * 0.4} ${len} ${len * 0.05}c${-len * 0.3} ${len * 0.35} ${-len * 0.85} ${len * 0.45} ${-len} ${-len * 0.05}z`
+
+/** Girasol y soja: gancho y cotiledones, hojas anchas o trifoliadas, capítulo o vainas. */
+function DicotSvg({ crop, g, x = 240, scale = 1, simple = false }) {
+  const pal = crop.paleta
+  const sen = senescence(crop, g)
+  const color = mix(pal.hoja, pal.maduro, sen)
+  const soy = crop.id === 'soja'
+  const h = 118 * scale * (0.5 + 0.5 * Math.min(1, crop.H / 2.4))
+  const top = GROUND - 8 - stemFraction(crop, g) * h
+  const lp = leafProgress(g)
+  const n = soy ? 13 : 16
+  const fallen = soy && g.madurez >= 1
+  const shown = fallen ? 0 : simple ? 3 : Math.floor(lp * n + 0.001)
+  const stemW = soy ? 1.8 : 3.4
+
+  // Antes de emerger: gancho bajo tierra
+  if (g.brote < 1) {
+    if (g.brote <= 0 || simple) return null
+    const yA = GROUND + 12 - 14 * g.brote
+    return <path d={`M${x} ${GROUND + 12}V${yA}q4 -4 7 2`} stroke="#c9d79a" strokeWidth="1.6" fill="none" />
+  }
+
+  const cotyColor = soy ? '#b9c25a' : mix(pal.hoja, 'e3eab0', 0.25)
+  const showCoty = g.hojas < 0.8 && !simple
+  const bloom = g.cabeza * 0.35 + g.polen * 0.65
+  const podC = mix('7aa045', pal.maduro.slice(1), clamp01((g.madurez - 0.35) / 0.65))
+
+  return (
+    <g>
+      <path d={`M${x} ${GROUND}V${lp > 0 ? top : GROUND - 8}`} stroke={lp > 0 ? color : '#c9d79a'} strokeWidth={stemW} />
+      {showCoty &&
+        [-1, 1].map((sd) => (
+          <ellipse key={sd} cx={x + sd * 8} cy={GROUND - 8} rx="7" ry="2.6" fill={cotyColor} />
+        ))}
+      {Array.from({ length: shown }, (_, k) => {
+        const side = k % 2 ? 1 : -1
+        const y = GROUND - 10 - (k / n) * (GROUND - 10 - top)
+        // en el dibujo, el girasol muestra una hoja de cada dos para que no se empasten
+        if (!soy && k % 2 === 1) return null
+        const len = (soy ? 10 : 11 + 8 * Math.sin(Math.PI * Math.min(1, 0.15 + (k / n) * 0.9))) * (simple ? 0.6 : 1)
+        const leafColor = mix(pal.hoja, pal.maduro, clamp01(sen * 1.5 - (k / n) * 0.5))
+        if (!soy) {
+          return <path key={k} d={heart(len)} fill={leafColor} transform={`translate(${x} ${y}) scale(${side} 1) rotate(${20 + 25 * sen})`} />
+        }
+        // soja: unifoliadas abajo y trifoliadas después, con pecíolo
+        const px = x + side * len * 0.8
+        const py = y - 3
+        return (
+          <g key={k} fill={leafColor}>
+            <path d={`M${x} ${y}L${px} ${py}`} stroke={leafColor} strokeWidth="0.8" />
+            {k < 2 ? (
+              <ellipse cx={px + side * 4} cy={py} rx="5" ry="3" />
+            ) : (
+              <>
+                <ellipse cx={px + side * 5} cy={py} rx="4.5" ry="2.4" />
+                <ellipse cx={px + side * 1} cy={py - 4} rx="2.4" ry="4" />
+                <ellipse cx={px + side * 1} cy={py + 4} rx="2.4" ry="4" />
+              </>
+            )}
+          </g>
+        )
+      })}
+      {soy &&
+        Array.from({ length: 8 }, (_, k) => {
+          const order = Math.min(1, Math.abs(k / 8 - 0.35) / 0.65)
+          const y = GROUND - 14 - ((k + 1) / 9) * (GROUND - 14 - top)
+          const side = k % 2 ? 1 : -1
+          const flower = bloom > order && g.grano < 0.3 + 0.3 * order
+          const pod = clamp01((g.grano - 0.2 - 0.3 * order) / 0.4)
+          return (
+            <g key={k}>
+              {flower && <circle cx={x + side * 3} cy={y} r="1.8" fill={pal.flor} />}
+              {pod > 0 && (
+                <path d={`M${x} ${y}q${side * 3} ${4 * pod} ${side * 2} ${10 * pod}`} stroke={podC} strokeWidth={2.6 * pod + 0.5} strokeLinecap="round" fill="none" />
+              )}
+            </g>
+          )
+        })}
+      {!soy && <Capitulo x={x} y={top} g={g} pal={pal} simple={simple} />}
+      {!soy && g.polen > 0 &&
+        [0, 1, 2, 3, 4, 5].map((i) => <circle key={i} cx={x + 14 + i * 8} cy={top - 6 + (i % 3) * 6} r="1.4" fill="#f3d55a" />)}
+    </g>
+  )
+}
+
+// Capítulo de girasol: botón, disco abierto con liguladas, dorso amarillo y caído al madurar.
+function Capitulo({ x, y, g, pal, simple }) {
+  const bud = clamp01((g.tallo - 0.5) / 0.5)
+  if (bud <= 0) return null
+  const r = 2 + 10 * g.cabeza
+  const droop = clamp01((g.madurez - 0.15) / 0.85)
+  const disc = mix('7d8a34', pal.grano.slice(1), clamp01((g.grano - 0.2) / 0.6))
+  const rays = g.cabeza > 0.3 && g.grano < 0.85 && !simple
+  return (
+    <g transform={`translate(${x + 4 + 6 * droop} ${y - r * (1 - droop) + 4 * droop}) rotate(${droop * 75})`}>
+      {rays &&
+        Array.from({ length: 14 }, (_, k) => (
+          <ellipse key={k} cx="0" cy={-r - 3} rx="1.6" ry="4" fill={mix(pal.flor.slice(1), '5b3d26', clamp01((g.grano - 0.35) / 0.5))} transform={`rotate(${(k * 360) / 14})`} />
+        ))}
+      <ellipse cx="0" cy="0" rx={r * (1 - 0.6 * droop)} ry={r} fill={droop > 0.3 ? mix('d9c25a', '6b4a2c', clamp01((g.madurez - 0.3) / 0.7)) : disc} />
+    </g>
+  )
+}
+
 /** Ilustración estática por etapa, para navegadores sin WebGL. */
 export default function StaticFallback({ crop, stage }) {
   const g = GROWTH_FRAMES[stage]
+  const dicot = crop.tipo === 'dicotiledonea'
+  const Plant = dicot ? DicotSvg : PlantSvg
   const sky = SKY_FRAMES[stage].sky
   const roots = [-0.55, -0.25, 0, 0.25, 0.55]
   const rootLen = Math.pow(g.raiz, 1.5) * 120
@@ -135,14 +252,24 @@ export default function StaticFallback({ crop, stage }) {
               const ty = -r * 14 + GROUND * (1 - s)
               return (
                 <g key={`${r}-${i}`} transform={`translate(${tx} ${ty}) scale(${s})`}>
-                  <PlantSvg crop={crop} g={g} scale={0.6} simple />
+                  <Plant crop={crop} g={g} scale={0.6} simple />
                 </g>
               )
             }),
           ).reverse()
         ) : (
           <>
-            {roots.map((a, i) => {
+            {dicot ? (
+              // raíz pivotante: una principal y laterales cortas
+              <g stroke="#efe4c8" fill="none">
+                <path d={`M240 ${GROUND + 12}q2 ${rootLen * 0.5} -2 ${rootLen * 1.1}`} strokeWidth="1.8" />
+                {Array.from({ length: Math.floor(rootLen / 14) }, (_, i) => {
+                  const yy = GROUND + 20 + i * 13
+                  const s = i % 2 ? 1 : -1
+                  return <path key={i} d={`M240 ${yy}q${s * 10} 2 ${s * (22 - i * 1.5)} 9`} strokeWidth="0.9" />
+                })}
+              </g>
+            ) : roots.map((a, i) => {
               const len = rootLen * (i === 2 ? 1 : 0.8)
               const ex = 240 + Math.sin(a) * len
               const ey = GROUND + 12 + Math.cos(a) * len
@@ -163,7 +290,7 @@ export default function StaticFallback({ crop, stage }) {
               ry={3.6 * (1 + 0.25 * g.semilla)}
               fill={g.semilla > 0 ? '#e597b2' : '#b8406c'}
             />
-            <PlantSvg crop={crop} g={g} />
+            <Plant crop={crop} g={g} />
           </>
         )}
       </svg>

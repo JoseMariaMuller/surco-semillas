@@ -10,12 +10,12 @@
   top: calc(var(--header-h) + var(--s-6));
 }
 
-/* En la ficha el selector va en dos filas de tres */
+/* En la ficha el selector va en dos filas de cuatro */
 .selector {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   width: 100%;
-  max-width: 30rem;
+  max-width: 36rem;
 }
 
 .note {

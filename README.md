@@ -1,6 +1,6 @@
 # Surco Semillas
 
-Sitio de una semillera ficticia de Pergamino (Buenos Aires) que vende semilla de maíz, trigo, cebada, avena, centeno y sorgo. La pieza central es una escena 3D: con el scroll ves nacer y crecer cada cultivo, desde la semilla bajo tierra hasta una hectárea madura que se mueve con el viento.
+Sitio de una semillera ficticia de Pergamino (Buenos Aires) que vende semilla de trigo, cebada, avena, centeno, maíz, sorgo, girasol y soja. La pieza central es una escena 3D: con el scroll ves nacer y crecer cada cultivo, desde la semilla bajo tierra hasta una hectárea madura que se mueve con el viento.
 
 Todo el 3D se genera por código: no hay modelos, texturas ni imágenes descargadas.
 
@@ -11,8 +11,9 @@ Todo el 3D se genera por código: no hay modelos, texturas ni imágenes descarga
 ## Qué tiene
 
 - **Un rizotrón**: la caja de vidrio con tierra que usan los agrónomos para ver las raíces. La cámara arranca pegada a la semilla, sube con el tallo hasta la espiga (o el choclo) y al final se aleja hasta ver la hectárea entera.
-- **Seis cultivos con forma propia**: espigas con aristas (trigo, cebada, centeno), panoja abierta (avena), panoja compacta (sorgo) y maíz con panoja, choclo, chala y barba. Hay macollos, polen en la floración y un secado gradual hacia la madurez.
-- **Once etapas reales**: escala Zadoks para los cereales de invierno, V/R para maíz y Vanderlip para sorgo, con los días desde la siembra de cada cultivo.
+- **Ocho cultivos con forma propia**: espigas con aristas (trigo, cebada, centeno), panoja abierta (avena), panoja compacta (sorgo) y maíz con panoja, choclo, chala y barba. Hay macollos, polen en la floración y un secado gradual hacia la madurez.
+- **Girasol y soja, que no son gramíneas**: germinan sacando los cotiledones de la tierra con el hipocótilo en gancho y tienen raíz pivotante (la soja, con nódulos). El girasol abre el capítulo, florece en anillos desde el borde y madura con el capítulo caído; la soja florece en las axilas, llena las vainas y pierde las hojas.
+- **Once etapas reales**: escala Zadoks para los cereales de invierno, V/R para maíz, Vanderlip para sorgo, Schneiter y Miller para girasol y Fehr y Caviness para soja, con los días desde la siembra de cada cultivo.
 - **Ficha técnica** con estética de rótulo de bolsa, **calculadora de semilla** (kg/ha, kg totales y bolsas) y **formulario de cotización** con validación accesible.
 
 | Maíz en floración (R1) | Sorgo: una hectárea |
@@ -22,6 +23,10 @@ Todo el 3D se genera por código: no hay modelos, texturas ni imágenes descarga
 | Cebada, primeras hojas | Avena madura | Calculadora |
 | --- | --- | --- |
 | ![Plántula de cebada con raíces visibles bajo el vidrio](docs/capturas/mobile-cebada-hojas.jpg) | ![Avena madura con panojas abiertas](docs/capturas/mobile-avena-madurez.jpg) | ![Calculadora de semilla en el celular](docs/capturas/mobile-calculadora.jpg) |
+
+| Girasol en floración (R5.5) | Soja, llenado de grano (R6) |
+| --- | --- |
+| ![Lote de girasol florecido, con la espiral de flores del disco](docs/capturas/desktop-girasol-floracion.jpg) | ![Soja con vainas verdes en las axilas](docs/capturas/mobile-soja-llenado.jpg) |
 
 ![Ficha técnica con estética de rótulo de bolsa de semilla](docs/capturas/desktop-ficha.jpg)
 
@@ -87,6 +92,7 @@ src/
     Plant.jsx         arma la planta según el cultivo y la etapa
     parts/            semilla, raíces, tallo y hojas
     heads/            espiga, panoja abierta, panoja compacta y maíz
+    dicot/            girasol y soja: hipocótilo, tallo y hojas anchas, capítulo, flores y vainas
     Pollen.jsx, Neighbors.jsx, Field.jsx, wind.js
   components/    header, historia con paneles y riel, selector, ficha, calculadora,
                  cotización, footer y la versión estática sin WebGL

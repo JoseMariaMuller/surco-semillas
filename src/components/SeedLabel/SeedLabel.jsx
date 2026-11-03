@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { CROPS, NOTA_VALORES } from '../../data/crops.js'
 import CropSelector from '../CropSelector/CropSelector.jsx'
+import { minusculaInicial } from '../../utils/text.js'
 import styles from './SeedLabel.module.css'
 
 const fmt = new Intl.NumberFormat('es-AR')
@@ -58,7 +59,7 @@ export default function SeedLabel({ cropId, onCropChange }) {
 
   const rows = [
     ['Especie', <><em>{crop.cientifico}</em> ({crop.nombre.toLowerCase()})</>],
-    ['Cultivar', `${variety.nombre}, ${variety.tipo.toLowerCase()}`],
+    ['Cultivar', `${variety.nombre}, ${minusculaInicial(variety.tipo)}`],
     ['Categoría', 'Original'],
     ['Poder germinativo', `${crop.pg} %`],
     ['Pureza', '99 %'],
