@@ -13,6 +13,7 @@ import Pollen from './Pollen.jsx'
 import Field from './Field.jsx'
 import { neighborPlacements } from './plantLayout.js'
 import Hypocotyl from './dicot/Hypocotyl.jsx'
+import Stalk from './dicot/Stalk.jsx'
 
 const HEADS = {
   espiga: Spike,
@@ -59,6 +60,7 @@ function DicotPlant({ crop, layout, quality }) {
         <Roots layout={layout} quality={quality} />
         <group ref={stalkRef}>
           <Hypocotyl crop={crop} layout={layout} quality={quality} />
+          <Stalk crop={crop} layout={layout} quality={quality} />
         </group>
       </SwapGroup>
       <Neighbors sourceRef={stalkRef} placements={neighbors} />

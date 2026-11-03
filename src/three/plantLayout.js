@@ -46,16 +46,20 @@ export const MORPH = {
   girasol: {
     leaves: 16, pairs: 3,
     nodes: [0.03, 0.07, 0.12, 0.2, 0.28, 0.36, 0.44, 0.52, 0.6, 0.68, 0.76, 0.84, 0.92],
-    petiole: [0.04, 0.13], blade: [0.08, 0.26],
+    petiole: [0.04, 0.13], blade: [0.08, 0.28],
     stemR: 0.01, headLen: 0.15, disc: 0.22,
+    // Alargamiento del tallo: pesos de hojas, tallo y grano (ver stemFraction en Stalk)
+    grow: [0.25, 0.75, 0],
     rootDepth: 0.46, laterals: [15, 20],
     seed: { len: 0.011, w: 0.0055, h: 0.0035 },
   },
   soja: {
     leaves: 13, pairs: 1,
     nodes: [0.05, 0.12, 0.2, 0.28, 0.36, 0.44, 0.52, 0.6, 0.68, 0.76, 0.85, 0.94],
-    petiole: [0.03, 0.12], blade: [0.04, 0.09],
+    petiole: [0.03, 0.12], blade: [0.05, 0.11],
     stemR: 0.003, headLen: 0.02, branches: 3,
+    // La soja (indeterminada) sigue creciendo hasta el llenado: a R1 tiene la mitad de su altura
+    grow: [0.2, 0.35, 0.45],
     rootDepth: 0.44, laterals: [15, 20],
     seed: { len: 0.0075, w: 0.0068, h: 0.006 },
   },
