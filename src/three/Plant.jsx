@@ -27,6 +27,8 @@ const HEADS = {
 const NEIGHBOR_COUNT = {
   maiz: { high: 70, low: 24 },
   sorgo: { high: 100, low: 32 },
+  girasol: { high: 60, low: 22 },
+  soja: { high: 160, low: 48 },
   default: { high: 170, low: 48 },
 }
 
@@ -70,6 +72,7 @@ function DicotPlant({ crop, layout, quality, reduced }) {
         </group>
       </SwapGroup>
       <Neighbors sourceRef={stalkRef} placements={neighbors} />
+      <Field crop={crop} layout={layout} quality={quality} neighborReach={neighbors.reach} />
       {emitter && <Pollen emitter={emitter} count={quality === 'high' ? 200 : 90} reduced={reduced} />}
     </group>
   )

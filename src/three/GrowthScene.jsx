@@ -125,6 +125,8 @@ export default memo(function GrowthScene({
       shadows={shadows ? 'percentage' : false}
       camera={{ fov: 38, near: 0.003, far: 220, position: [0, -CROPS[cropId].d, 0.12] }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
+      // Solo en desarrollo: el renderer queda a mano para medir memoria desde la consola
+      onCreated={import.meta.env.DEV ? ({ gl }) => (window.__surcoGL = gl) : undefined}
     >
       <GrowthContext.Provider value={state}>
         <Driver state={state} progressRef={progressRef} reduced={reduced} onStage={onStage} />

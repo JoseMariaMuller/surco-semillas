@@ -17,6 +17,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { createRng } from '../utils/random.js'
 import { useGrowth } from './growthState.js'
 import { createLeafGeometry, shapeLeaf } from './parts/leafGeometry.js'
+import { createBroadLeafGeometry, shapeBroadLeaf } from './dicot/broadLeafGeometry.js'
 import { neighborDistance } from './plantLayout.js'
 import { applyWind } from './wind.js'
 
@@ -45,8 +46,52 @@ function prep(geo, color, matrix) {
 const M = (pos = [0, 0, 0], rot = [0, 0, 0], scale = [1, 1, 1], order = 'XYZ') =>
   new Matrix4().compose(new Vector3(...pos), new Quaternion().setFromEuler(new Euler(...rot, order)), new Vector3(...scale))
 
+/** Girasol maduro: tallo, dos hojas secas colgando y el capítulo caído, de dorso marrón. */
+function simpleSunflower(crop, layout, rng) {
+  const { stemLen, m } = layout
+  const straw = new Color(crop.paleta.maduro)
+  const parts = [prep(new CylinderGeometry(m.stemR * 0.5, m.stemR * 0.9, stemLen, 4, 1), straw, M([0, stemLen / 2, 0]))]
+  for (const f of [0.35, 0.6]) {
+    const lg = createBroadLeafGeometry(4, 'acorazonada')
+    shapeBroadLeaf(lg, { blade: 0.2, ratio: 0.8, droop: 1.7, fold: 0.15 }, 1, 1)
+    parts.push(prep(lg, straw.clone().multiplyScalar(0.8), M([0, f * stemLen, 0], [0, rng.range(0, 6.28), 0])))
+  }
+  // capítulo colgando adelante del tallo, mirando al suelo
+  const R = m.disc / 2
+  const disc = new CylinderGeometry(R, R * 0.9, 0.03, 8, 1)
+  parts.push(prep(disc, new Color('#6b4a2c'), M([0.07, stemLen + 0.02, 0], [0, 0, 0.35])))
+  return parts
+}
+
+/** Soja madura: tallo y ramas sin hojas, con racimos de vainas tostadas. */
+function simpleSoy(crop, layout, rng) {
+  const { stemLen, m } = layout
+  const straw = new Color(crop.paleta.maduro)
+  const pod = straw.clone().multiplyScalar(0.85)
+  const parts = [prep(new CylinderGeometry(m.stemR * 0.6, m.stemR, stemLen, 3, 1), straw, M([0, stemLen / 2, 0]))]
+  for (let b = 0; b < 3; b++) {
+    const len = stemLen * 0.4
+    const br = new CylinderGeometry(m.stemR * 0.4, m.stemR * 0.6, len, 3, 1)
+    br.translate(0, len / 2, 0)
+    parts.push(prep(br, straw, M([0, stemLen * (0.15 + b * 0.08), 0], [0, b * 2.1 + rng.range(-0.3, 0.3), 0.6], [1, 1, 1], 'YZX')))
+  }
+  // racimos de vainas en los nudos
+  for (let k = 0; k < 8; k++) {
+    const y = stemLen * (0.2 + k * 0.1)
+    const a = k * 2.4
+    parts.push(prep(new SphereGeometry(1, 4, 2), pod, M([Math.cos(a) * 0.02, y - 0.015, -Math.sin(a) * 0.02], [0, a, -1.2], [0.022, 0.006, 0.005], 'YZX')))
+  }
+  return parts
+}
+
 /** Planta madura simplificada: pocos polígonos, colores ya secos. */
 function simplePlant(crop, layout, rng) {
+  if (crop.tipo === 'dicotiledonea') {
+    const parts = crop.cabeza === 'capitulo' ? simpleSunflower(crop, layout, rng) : simpleSoy(crop, layout, rng)
+    const merged = mergeGeometries(parts)
+    parts.forEach((p) => p.dispose())
+    return merged
+  }
   const { stemLen, headLen, m } = layout
   const pal = crop.paleta
   const straw = new Color(pal.maduro)
