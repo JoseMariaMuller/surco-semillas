@@ -53,6 +53,14 @@
   flex: none;
 }
 
+/* Con 8 cultivos, por debajo de 1100 px van en dos filas de 4 */
+@media (max-width: 1099px) {
+  .group {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 @media (max-width: 760px) {
   .group {
     width: 100%;

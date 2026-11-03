@@ -66,6 +66,27 @@ const ICONS = {
       </g>
     </>
   ),
+  girasol: (
+    <>
+      <path d="M12 22v-8M12 18c-2.5-.2-4.2-1.4-5-3.2 2.4-.3 4.1.6 5 2.2" fill="none" />
+      {Array.from({ length: 12 }, (_, k) => {
+        const a = (k * 360) / 12
+        return <ellipse key={k} cx="12" cy="3.4" rx="1.1" ry="2.3" fill="currentColor" stroke="none" transform={`rotate(${a} 12 8.6)`} />
+      })}
+      <circle cx="12" cy="8.6" r="3.2" fill="currentColor" stroke="none" />
+    </>
+  ),
+  soja: (
+    <>
+      <path d="M12 2.5v3" fill="none" />
+      <path d="M12.6 5.4c3.4 1 5 4.6 4.4 8.8-.6 4.2-3.3 7.4-6.8 7.6-1.6.1-2.4-1.1-1.9-2.6 1.2-3.4 2.5-6.6 2.6-10.6 0-1.8.6-3.4 1.7-3.2z" fill="none" />
+      <g fill="currentColor" stroke="none">
+        <circle cx="13.4" cy="9.4" r="1.7" />
+        <circle cx="13.1" cy="13.4" r="1.7" />
+        <circle cx="12.1" cy="17.3" r="1.7" />
+      </g>
+    </>
+  ),
 }
 
 export default function CropIcon({ id, className }) {
