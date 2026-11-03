@@ -231,6 +231,46 @@ function soyBranches(m, leaves, rng) {
   })
 }
 
+/**
+ * Sitios de flores y vainas de la soja: en las axilas del tallo (desde el tercer nudo)
+ * y a lo largo de las ramas. `order` es el orden de aparición: la floración arranca en
+ * los nudos de abajo y del medio, y sigue hacia arriba.
+ */
+function soyPodSites(crop, m, leaves, branches) {
+  if (crop.cabeza !== 'vainas') return []
+  const rng = createRng(`vainas-${crop.id}`)
+  const sites = []
+  for (let ni = 2; ni < m.nodes.length; ni++) {
+    const leaf = leaves.find((l) => l.nodeIndex === ni)
+    const f = m.nodes[ni]
+    sites.push({
+      node: f,
+      nodeIndex: ni,
+      branch: -1,
+      u: 0,
+      azimuth: leaf.azimuth + rng.range(-0.3, 0.3),
+      flowers: rng.int(2, 4),
+      pods: rng.int(2, 3),
+      order: Math.min(1, Math.abs(f - 0.35) / 0.65),
+    })
+  }
+  branches.forEach((b, bi) => {
+    for (const u of [0.55, 0.9]) {
+      sites.push({
+        node: b.node,
+        nodeIndex: b.nodeIndex,
+        branch: bi,
+        u,
+        azimuth: rng.range(0, Math.PI * 2),
+        flowers: rng.int(2, 4),
+        pods: rng.int(2, 3),
+        order: 0.2 + 0.3 * u,
+      })
+    }
+  })
+  return sites
+}
+
 // Centro de la cabeza ya crecida, para la cámara.
 function headCenterFor(crop, stemLen, headLen) {
   if (crop.cabeza === 'capitulo') return [0, stemLen + headLen * 0.55, 0]
@@ -255,6 +295,7 @@ function buildDicotLayout(crop, m, rng) {
   const roots = buildTaproot(crop, m, rng)
   const headCenter = headCenterFor(crop, stemLen, headLen)
   const ear = earLayout(crop, m, stemLen)
+  const branches = soyBranches(m, leaves, rng)
   return {
     crop,
     m,
@@ -263,7 +304,8 @@ function buildDicotLayout(crop, m, rng) {
     leaves,
     roots,
     nodules: buildNodules(crop, roots),
-    branches: soyBranches(m, leaves, rng),
+    branches,
+    podSites: soyPodSites(crop, m, leaves, branches),
     headCenter,
     headAzimuth: crop.cabeza === 'capitulo' ? CAPITULUM_AZIMUTH : rng.range(0, Math.PI * 2),
     ...ear,
@@ -318,6 +360,7 @@ export function buildLayout(crop) {
     roots,
     nodules: [],
     branches: [],
+    podSites: [],
     headCenter,
     headAzimuth,
     ...ear,

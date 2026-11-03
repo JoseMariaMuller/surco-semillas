@@ -31,5 +31,32 @@ export function topNode(leaves, g) {
 }
 export const APEX = 0.012
 
+/**
+ * Senescencia (0..1). La soja sigue verde en R6 (madurez 0,3) y recién amarillea
+ * desde R7; el girasol empieza a secar sus hojas de abajo durante el llenado.
+ */
+export const senescence = (crop, g) =>
+  crop.id === 'soja' ? clamp01((g.g.madurez - 0.35) / 0.65) : g.g.madurez
+
+// Ramas de la soja: crecen desde la etapa de ramificación
+export const branchGrowth = (g) => clamp01((g.g.tallo - 0.5) / 0.5)
+
+/**
+ * Posición actual de un sitio (nudo del tallo o punto de una rama), en el espacio
+ * del tallo. Usa el mismo crecimiento que Stalk, así flores y vainas siguen a su nudo.
+ * site: { node, branch (-1 = tallo), u (fracción de la rama), azimuth }
+ */
+export function nodePosition(layout, site, g, out) {
+  const y = nodeHeight(layout, site.node, g)
+  if (site.branch < 0) {
+    const r = layout.m.stemR * 0.9
+    return out.set(Math.cos(site.azimuth) * r, y, -Math.sin(site.azimuth) * r)
+  }
+  const b = layout.branches[site.branch]
+  const along = site.u * b.len * branchGrowth(g)
+  const s = Math.sin(b.tilt)
+  return out.set(s * Math.cos(b.azimuth) * along, y + Math.cos(b.tilt) * along, -s * Math.sin(b.azimuth) * along)
+}
+
 // Vigor de la planta: las hojas de una planta joven son más chicas y se agrandan con ella.
 export const leafVigor = (m, g) => 0.45 + 0.55 * Math.min(1, stemFraction(m, g) * 1.6)

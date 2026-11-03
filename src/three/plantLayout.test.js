@@ -49,3 +49,16 @@ test('raíces dentro del rizotrón', () => {
     }
   }
 })
+
+test('soja: 35–45 vainas repartidas entre el tallo y las ramas', () => {
+  const L = buildLayout(CROPS.soja)
+  const pods = L.podSites.reduce((s, p) => s + p.pods, 0)
+  assert.ok(pods >= 35 && pods <= 45, `vainas: ${pods}`)
+  assert.ok(L.podSites.some((p) => p.branch >= 0))
+  assert.ok(L.podSites.every((p) => p.order >= 0 && p.order <= 1))
+  assert.ok(L.podSites.every((p) => p.flowers >= 2 && p.flowers <= 4 && p.pods >= 2 && p.pods <= 3))
+})
+
+test('girasol: sin sitios de vainas', () => {
+  assert.equal(buildLayout(CROPS.girasol).podSites.length, 0)
+})

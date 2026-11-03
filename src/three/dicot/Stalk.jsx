@@ -4,12 +4,11 @@ import { Color, CylinderGeometry, MeshStandardMaterial } from 'three'
 import { useGrowth } from '../growthState.js'
 import { applyWind } from '../wind.js'
 import BroadLeaf from './BroadLeaf.jsx'
-import { APEX, leafProgress, leafVigor, nodeHeight, topNode } from './stalkGrowth.js'
+import { APEX, branchGrowth, leafProgress, leafVigor, nodeHeight, senescence, topNode } from './stalkGrowth.js'
+import SoyNodes from './SoyNodes.jsx'
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v))
 
-// Crecimiento de las ramas de la soja: arrancan en la etapa de ramificación
-const branchGrowth = (g) => clamp01((g.g.tallo - 0.5) / 0.5)
 
 /**
  * Tallo de dicotiledónea: cilindro sin vainas, hojas con pecíolo y, en la soja,
@@ -88,7 +87,7 @@ export default function Stalk({ crop, layout, quality, head = null, children = n
       branchStems.current[i].scale.y = Math.max(b.len * bg, 1e-4)
     })
 
-    built.material.color.copy(built.green).lerp(built.ripe, clamp01(g.g.madurez * 1.2 - 0.1))
+    built.material.color.copy(built.green).lerp(built.ripe, clamp01(senescence(crop, g) * 1.2 - 0.1))
   })
 
   return (
@@ -131,6 +130,7 @@ export default function Stalk({ crop, layout, quality, head = null, children = n
         </group>
       ))}
       <group ref={top}>{head}</group>
+      {crop.cabeza === 'vainas' && <SoyNodes crop={crop} layout={layout} quality={quality} />}
       {children}
     </group>
   )

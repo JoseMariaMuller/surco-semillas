@@ -199,7 +199,7 @@ export function cameraFrame(i, crop, head, focus) {
         : { pos: [0.25 * H, 0.95 * H, 0.45 * H], look: focus }
     case 8:
       // Girasol en R7: la cámara pasa por detrás para ver el dorso que se pone amarillo
-      if (crop.cabeza === 'capitulo') return { pos: [-0.3 * H, 0.97 * H, -0.05 * H], look: focus }
+      if (crop.cabeza === 'capitulo') return { pos: [-0.35 * H, 1.12 * H, -0.05 * H], look: focus }
       return midHeight(crop, i)
         ? { pos: [focus[0] - 0.3 * H * 0.5, focus[1] + 0.02, focus[2] + 0.5 * H * 0.5], look: focus }
         : { pos: [-0.3 * H, 0.9 * H, 0.5 * H], look: focus }
