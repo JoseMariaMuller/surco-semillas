@@ -68,7 +68,7 @@ export default function Stalk({ crop, layout, quality, head = null, children = n
     // sobre los cotiledones, el tallo aparece con la primera hoja verdadera
     const visible = leafProgress(g) > 0.001
     stem.current.visible = visible
-    const len = nodeHeight(layout, topNode(leaves, g), g) + APEX
+    const len = nodeHeight(layout, topNode(crop, leaves, g), g) + APEX
     // el tallo engrosa a medida que la planta crece
     const thick = leafVigor(m, g)
     stem.current.scale.set(thick, Math.max(len, 1e-4), thick)

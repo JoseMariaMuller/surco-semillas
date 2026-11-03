@@ -4,7 +4,7 @@ import { Color, CylinderGeometry, DoubleSide, MeshStandardMaterial } from 'three
 import { useGrowth } from '../growthState.js'
 import { applyWind } from '../wind.js'
 import { createBroadLeafGeometry, shapeBroadLeaf } from './broadLeafGeometry.js'
-import { leafProgress, leafVigor, senescence } from './stalkGrowth.js'
+import { leafVigor, senescence, visibleLeaves } from './stalkGrowth.js'
 
 const DRY_TINT = new Color('#8a6a45')
 const clamp01 = (v) => Math.min(1, Math.max(0, v))
@@ -74,7 +74,7 @@ export default function BroadLeaf({ crop, m, leaf, count, quality, growth, order
   )
 
   useFrame(() => {
-    const grow = growth ? growth(g) : clamp01(leafProgress(g) * count - leaf.k)
+    const grow = growth ? growth(g) : clamp01(visibleLeaves(crop, g, count) - leaf.k)
     // tamaño: lo que se desplegó, por el vigor de la planta (la apertura no depende del vigor)
     const size = grow * leafVigor(m, g)
     // Madurez: se secan de abajo hacia arriba; la soja además las pierde

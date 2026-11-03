@@ -15,6 +15,7 @@ import {
 } from 'three'
 import { useGrowth } from '../growthState.js'
 import { applyWind } from '../wind.js'
+import { discAnthesis, discSpent } from './capitulumState.js'
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v))
 const lerp = (a, b, t) => a + (b - a) * t
@@ -121,7 +122,7 @@ export default function Capitulum({ crop, layout, quality }) {
   )
 
   useFrame(() => {
-    const { tallo, cabeza, polen, grano, madurez } = g.g
+    const { tallo, cabeza, grano, madurez } = g.g
     const bud = clamp01((tallo - 0.5) / 0.5)
     const visible = bud > 0.001
     bendRef.current.visible = visible
@@ -181,8 +182,9 @@ export default function Capitulum({ crop, layout, quality }) {
     }
 
     // Flores del disco: antesis en anillos del borde al centro, después aquenios oscuros
-    const spent = clamp01((grano - 0.2) / 0.6)
-    const key = `${polen.toFixed(3)}|${spent.toFixed(3)}|${madurez.toFixed(3)}`
+    const opened = discAnthesis(g)
+    const spent = discSpent(g)
+    const key = `${opened.toFixed(3)}|${spent.toFixed(3)}|${madurez.toFixed(3)}`
     if (key !== built.last.colors) {
       built.last.colors = key
       const avg = new Color(0, 0, 0)
@@ -191,7 +193,7 @@ export default function Capitulum({ crop, layout, quality }) {
         if (r > 1 - spent) {
           // aquenio: gris oscuro con rayas (variación entre vecinos), más seco al madurar
           t.c.copy(SPENT).lerp(built.grano, clamp01(spent * 1.4 - (1 - r))).multiplyScalar(n % 3 === 0 ? 1.25 : 1)
-        } else if (r > 1 - polen) {
+        } else if (r > 1 - opened) {
           t.c.copy(POLLEN)
         } else {
           t.c.copy(CLOSED)

@@ -102,8 +102,8 @@ const TEXTS = {
     0: 'La semilla seca espera bajo cuatro centímetros de tierra. Casi todo lo que tiene adentro son los dos cotiledones, cargados de proteína y aceite.',
     1: 'La semilla absorbe agua, hasta la mitad de su peso, y se hincha. Asoma la radícula, que va a ser la raíz principal.',
     2: 'El hipocótilo sale en forma de gancho y arrastra los cotiledones fuera de la tierra. Una costra dura puede trabarlo.',
-    3: 'Arriba de las dos hojas unifoliadas ya se abrieron dos trifoliadas. En las raíces aparecen los nódulos, donde las bacterias fijan el nitrógeno del aire.',
-    4: 'Cinco trifoliadas y los nódulos en plena actividad. Cada nudo nuevo es un lugar posible para flores y vainas.',
+    3: 'Arriba de las dos hojas unifoliadas ya se abrió la primera trifoliada. En las raíces aparecen los nódulos, donde las bacterias fijan el nitrógeno del aire.',
+    4: 'Cuatro trifoliadas abiertas sobre las unifoliadas y los nódulos en plena actividad. Cada nudo nuevo es un lugar posible para flores y vainas.',
     5: 'Desde los nudos de abajo salen ramas que también van a llevar vainas. Si el lote tiene pocas plantas, las ramas ocupan el espacio.',
     6: 'Aparece la primera flor, violeta y chiquita, en un nudo cualquiera del tallo. La soja sigue sumando hojas mientras florece.',
     7: 'Hay flores abiertas en uno de los dos nudos de más arriba. Cada flor se poliniza sola, antes de abrirse.',
@@ -183,7 +183,10 @@ function midHeight(crop, i) {
 export function cameraFrame(i, crop, head, focus) {
   const { H, d } = crop
   if (midHeight(crop, i) && i === 6) {
-    return { pos: [focus[0] + 0.3 * H * 0.5, focus[1] + 0.08, focus[2] + 0.55 * H * 0.5], look: focus }
+    // En R1 la soja tiene ~60 % de su altura y las primeras flores en los nudos de abajo
+    // y del medio (entre 0,13 y 0,30 m): se mira ahí, no al tercio medio de la planta adulta.
+    const look = [focus[0], 0.25 * H, focus[2]]
+    return { pos: [look[0] + 0.3 * H * 0.5, look[1] + 0.08, look[2] + 0.55 * H * 0.5], look }
   }
   switch (i) {
     case 0: return { pos: [0, -d, 0.12], look: [0, -d, 0] }

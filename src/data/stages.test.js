@@ -38,3 +38,9 @@ test('los seis actuales no cambian', () => {
   assert.equal(getStages('cebada')[9].days, 160)
   assert.equal(getStages('trigo')[1].text, 'La semilla absorbe agua y se hincha. En unos días asoma la radícula, la primera raíz.')
 })
+
+test('soja: textos de V2 y V5 según Fehr y Caviness (V2 = una trifoliada, V5 = cuatro)', () => {
+  const st = getStages('soja')
+  assert.match(st[3].text, /la primera trifoliada/)
+  assert.match(st[4].text, /^Cuatro trifoliadas/)
+})

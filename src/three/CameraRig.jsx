@@ -81,7 +81,8 @@ export default function CameraRig({ crop, layout, reduced = false }) {
     // Corre el encuadre para que la planta no quede detrás del panel:
     // a la derecha en desktop (panel a la izquierda) y arriba en mobile (tarjeta abajo).
     const x = narrow ? 0 : -0.17 * width
-    const y = narrow ? 0.13 * height : 0
+    // en mobile el selector ocupa dos filas arriba y la tarjeta va abajo: la planta sube un poco
+    const y = narrow ? 0.06 * height : 0
     if (view.w !== width || view.h !== height || view.x !== x || view.y !== y) {
       Object.assign(view, { w: width, h: height, x, y })
       camera.setViewOffset(width, height, x, y, width, height)

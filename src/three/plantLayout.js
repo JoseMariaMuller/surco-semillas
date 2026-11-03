@@ -441,9 +441,13 @@ export function neighborPlacements(crop, count) {
   const picked = cands.slice(0, count)
   const out = picked.map(({ x, z }) => {
     const s = rng.range(0.82, 1.08)
-    // Los capítulos de un lote de girasol miran todos al este: casi sin giro
+    // Mismo orden de sorteo que antes (inclinación x, giro, inclinación z): así el
+    // cultivo vecino de los demás cultivos no cambia. Los capítulos de un lote de
+    // girasol miran todos al este: casi sin giro.
+    const tx = rng.range(-0.05, 0.05)
     const yaw = crop.cabeza === 'capitulo' ? rng.range(-0.3, 0.3) : rng.range(0, Math.PI * 2)
-    const q = new Quaternion().setFromEuler(new Euler(rng.range(-0.05, 0.05), yaw, rng.range(-0.05, 0.05)))
+    const tz = rng.range(-0.05, 0.05)
+    const q = new Quaternion().setFromEuler(new Euler(tx, yaw, tz))
     return new Matrix4().compose(new Vector3(x, 0, z), q, new Vector3(s, s, s))
   })
   // Hasta dónde llega el cultivo vecino (la hectárea empieza ahí)

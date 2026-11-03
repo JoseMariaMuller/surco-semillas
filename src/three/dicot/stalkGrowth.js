@@ -9,6 +9,17 @@ const clamp01 = (v) => Math.min(1, Math.max(0, v))
  * Queda: girasol ~V4 en la etapa 3 y ~V8 en la 4; soja ~V2 y ~V5.
  */
 export const leafProgress = (g) => clamp01((g.g.hojas - 0.15) / 0.85)
+
+/**
+ * Cuántas hojas (de `count`) están desplegadas. La soja es indeterminada: en R1 todavía
+ * le faltan nudos, que suma durante el llenado. Con esto: girasol V4 y V8 en las etapas 3 y 4;
+ * soja V2 (2 unifoliadas + 1 trifoliada) y V5 (2 + 4), según Fehr y Caviness.
+ */
+export function visibleLeaves(crop, g, count) {
+  const lp = leafProgress(g)
+  const n = crop.id === 'soja' ? lp * count * (0.9 + 0.1 * clamp01(g.g.grano)) : lp * count
+  return Math.min(count, n)
+}
 export const COT_NODE = 0.03 // altura del nudo cotiledonar (punta del hipocótilo)
 
 /**
@@ -21,10 +32,9 @@ export const stemFraction = (m, g) => clamp01(m.grow[0] * g.g.hojas + m.grow[1] 
 export const nodeHeight = (layout, f, g) => COT_NODE + f * stemFraction(layout.m, g) * layout.stemLen
 
 // Nudo más alto ya formado: la punta del tallo está justo arriba de la hoja más nueva.
-export function topNode(leaves, g) {
-  const h = leafProgress(g)
-  if (h >= 0.999) return 1
-  const n = h * leaves.length
+export function topNode(crop, leaves, g) {
+  const n = visibleLeaves(crop, g, leaves.length)
+  if (n >= leaves.length - 1e-3) return 1
   const i = Math.min(leaves.length - 1, Math.floor(n))
   const j = Math.min(leaves.length - 1, i + 1)
   return leaves[i].node + (leaves[j].node - leaves[i].node) * (n - i)
