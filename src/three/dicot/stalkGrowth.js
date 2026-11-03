@@ -1,6 +1,14 @@
 // Crecimiento del tallo de las dicotiledóneas (lo comparten el tallo, las flores y las vainas).
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v))
+
+/**
+ * Hojas verdaderas desplegadas (0..1). En la tabla compartida `hojas` vale 0,15 en la
+ * emergencia (la primera hoja de los cereales); en las dicotiledóneas a esa altura solo
+ * están los cotiledones, así que las hojas verdaderas arrancan después.
+ * Queda: girasol ~V4 en la etapa 3 y ~V8 en la 4; soja ~V2 y ~V5.
+ */
+export const leafProgress = (g) => clamp01((g.g.hojas - 0.15) / 0.85)
 export const COT_NODE = 0.03 // altura del nudo cotiledonar (punta del hipocótilo)
 
 /**
@@ -14,7 +22,7 @@ export const nodeHeight = (layout, f, g) => COT_NODE + f * stemFraction(layout.m
 
 // Nudo más alto ya formado: la punta del tallo está justo arriba de la hoja más nueva.
 export function topNode(leaves, g) {
-  const h = g.g.hojas
+  const h = leafProgress(g)
   if (h >= 0.999) return 1
   const n = h * leaves.length
   const i = Math.min(leaves.length - 1, Math.floor(n))

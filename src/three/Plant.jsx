@@ -14,6 +14,7 @@ import Field from './Field.jsx'
 import { neighborPlacements } from './plantLayout.js'
 import Hypocotyl from './dicot/Hypocotyl.jsx'
 import Stalk from './dicot/Stalk.jsx'
+import Capitulum from './dicot/Capitulum.jsx'
 
 const HEADS = {
   espiga: Spike,
@@ -31,6 +32,9 @@ const NEIGHBOR_COUNT = {
 
 function pollenEmitter(crop, layout) {
   const { stemLen, headLen, headCenter } = layout
+  // Girasol: desde el disco. Soja: la flor se poliniza cerrada, no suelta polen visible.
+  if (crop.cabeza === 'capitulo') return { center: headCenter, half: 0.02, radius: layout.m.disc * 0.4 }
+  if (crop.cabeza === 'vainas') return null
   if (crop.id === 'maiz') return { center: [0, stemLen + headLen * 0.4, 0], half: headLen * 0.3, radius: 0.09 }
   if (crop.cabeza === 'panoja-abierta') return { center: headCenter, half: headLen * 0.4, radius: 0.06 }
   if (crop.cabeza === 'panoja-compacta') return { center: headCenter, half: headLen * 0.45, radius: 0.04 }
@@ -49,10 +53,12 @@ function SwapGroup({ children }) {
  * Dicotiledóneas (girasol y soja): semilla, raíz pivotante y, dentro del grupo que
  * copia el cultivo vecino, el hipocótilo con los cotiledones y el tallo.
  */
-function DicotPlant({ crop, layout, quality }) {
+function DicotPlant({ crop, layout, quality, reduced }) {
   const stalkRef = useRef(null)
   const counts = NEIGHBOR_COUNT[crop.id] ?? NEIGHBOR_COUNT.default
   const neighbors = useMemo(() => neighborPlacements(crop, counts[quality]), [crop, counts, quality])
+  const emitter = useMemo(() => pollenEmitter(crop, layout), [crop, layout])
+  const head = crop.cabeza === 'capitulo' ? <Capitulum crop={crop} layout={layout} quality={quality} /> : null
   return (
     <group>
       <SwapGroup>
@@ -60,10 +66,11 @@ function DicotPlant({ crop, layout, quality }) {
         <Roots layout={layout} quality={quality} />
         <group ref={stalkRef}>
           <Hypocotyl crop={crop} layout={layout} quality={quality} />
-          <Stalk crop={crop} layout={layout} quality={quality} />
+          <Stalk crop={crop} layout={layout} quality={quality} head={head} />
         </group>
       </SwapGroup>
       <Neighbors sourceRef={stalkRef} placements={neighbors} />
+      {emitter && <Pollen emitter={emitter} count={quality === 'high' ? 200 : 90} reduced={reduced} />}
     </group>
   )
 }

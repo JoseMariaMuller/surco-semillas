@@ -4,7 +4,7 @@ import { Color, CylinderGeometry, MeshStandardMaterial } from 'three'
 import { useGrowth } from '../growthState.js'
 import { applyWind } from '../wind.js'
 import BroadLeaf from './BroadLeaf.jsx'
-import { APEX, leafVigor, nodeHeight, topNode } from './stalkGrowth.js'
+import { APEX, leafProgress, leafVigor, nodeHeight, topNode } from './stalkGrowth.js'
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v))
 
@@ -66,7 +66,8 @@ export default function Stalk({ crop, layout, quality, head = null, children = n
   )
 
   useFrame(() => {
-    const visible = g.g.brote >= 0.999
+    // sobre los cotiledones, el tallo aparece con la primera hoja verdadera
+    const visible = leafProgress(g) > 0.001
     stem.current.visible = visible
     const len = nodeHeight(layout, topNode(leaves, g), g) + APEX
     // el tallo engrosa a medida que la planta crece
