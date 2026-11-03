@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { InstancedMesh, Matrix4 } from 'three'
+import { InstancedBufferAttribute, InstancedMesh, Matrix4 } from 'three'
 import { useGrowth } from './growthState.js'
 
 /**
@@ -9,7 +9,8 @@ import { useGrowth } from './growthState.js'
  * Se usa para los macollos (alrededor de la planta) y para el cultivo vecino.
  * - scaleBy: clave del crecimiento que escala cada copia (p. ej. 'macollos')
  * - castShadow: si las copias proyectan sombra
- * Las mallas con userData.noMirror no se copian.
+ * Las mallas con userData.noMirror no se copian. Si la malla de origen tiene color por
+ * instancia (las flores del disco del girasol), las copias lo repiten.
  */
 export default function Neighbors({ sourceRef, placements, scaleBy = null, castShadow = false }) {
   const g = useGrowth()
@@ -51,6 +52,9 @@ export default function Neighbors({ sourceRef, placements, scaleBy = null, castS
         if (!obj.isMesh || obj.userData.noMirror) return
         const per = obj.isInstancedMesh ? obj.instanceMatrix.count : 1
         const mesh = new InstancedMesh(obj.geometry, obj.material, per * placements.length)
+        if (obj.instanceColor) {
+          mesh.instanceColor = new InstancedBufferAttribute(new Float32Array(per * placements.length * 3), 3)
+        }
         mesh.castShadow = castShadow && obj.castShadow
         mesh.frustumCulled = false
         mesh.count = 0
@@ -104,6 +108,13 @@ export default function Neighbors({ sourceRef, placements, scaleBy = null, castS
           }
         }
         mesh.count = n * P.length
+        // mismos colores en cada copia, solo si cambiaron en el origen
+        if (src.instanceColor && m.colorVersion !== src.instanceColor.version) {
+          m.colorVersion = src.instanceColor.version
+          const c = src.instanceColor.array.subarray(0, n * 3)
+          for (let k = 0; k < P.length; k++) mesh.instanceColor.array.set(c, k * n * 3)
+          mesh.instanceColor.needsUpdate = true
+        }
       } else {
         for (let k = 0; k < P.length; k++) {
           st.out.multiplyMatrices(P[k], st.rel)

@@ -30,8 +30,16 @@ const BACK_YELLOW = new Color('#d9c25a')
 const BACK_BROWN = new Color('#6b4a2c')
 
 const RAYS = 32
-const BRACTS = 26
 const NECK = 0.06 // cuello entre el último nudo y el capítulo
+const RIM = 0.012 // espesor del borde del receptáculo
+// Brácteas del dorso en tres filas, superpuestas como escamas:
+// [cantidad, ángulo desde el eje del dorso (rad), largo relativo al radio]
+const BRACT_ROWS = [
+  [24, 1.54, 0.42],
+  [20, 1.1, 0.38],
+  [16, 0.68, 0.32],
+]
+const BRACTS = BRACT_ROWS.reduce((n, r) => n + r[0], 0)
 
 /**
  * Capítulo del girasol: botón en estrella (R1), disco que se abre con las liguladas (R4),
@@ -51,14 +59,20 @@ export default function Capitulum({ crop, layout, quality }) {
     const flor = new Color(crop.paleta.flor)
     const grano = new Color(crop.paleta.grano)
 
-    // Receptáculo: cilindro chato con el frente en z = 0
-    const discGeo = new CylinderGeometry(R, R * 0.92, 0.028, hi ? 40 : 20, 1)
-    discGeo.rotateX(Math.PI / 2)
-    discGeo.translate(0, 0, -0.016)
+    // Receptáculo: borde con espesor y, detrás, el dorso en cúpula (frente en z = 0)
+    const seg = hi ? 40 : 20
+    const D = R * 0.32
+    const rimGeo = new CylinderGeometry(R, R * 0.97, RIM, seg, 1, true)
+    rimGeo.rotateX(Math.PI / 2)
+    rimGeo.translate(0, 0, -RIM / 2)
+    const domeGeo = new SphereGeometry(1, seg, hi ? 10 : 6, 0, Math.PI * 2, 0, Math.PI / 2)
+    domeGeo.scale(R * 0.97, D, R * 0.97)
+    domeGeo.rotateX(-Math.PI / 2) // la cúpula queda hacia −Z, detrás del frente
+    domeGeo.translate(0, 0, -RIM)
     // Emisivo leve: a contraluz el dorso no queda negro
     const backMat = applyWind(new MeshStandardMaterial({ color: BRACT.clone(), roughness: 0.7, emissive: BRACT.clone().multiplyScalar(0.25) }))
 
-    // Frente liso con el color promedio: lo copian los vecinos (las flores del disco no)
+    // Fondo del frente con el color promedio de las flores: tapa los huecos entre ellas
     const capGeo = new CircleGeometry(R * 0.98, hi ? 40 : 20)
     const capMat = applyWind(new MeshStandardMaterial({ color: CLOSED.clone(), roughness: 0.8 }))
 
@@ -68,7 +82,6 @@ export default function Capitulum({ crop, layout, quality }) {
     floretGeo.scale(c * 1.05, c * 1.05, c * 1.5)
     const floretMat = applyWind(new MeshStandardMaterial({ color: '#ffffff', roughness: 0.75 }))
     const florets = new InstancedMesh(floretGeo, floretMat, N)
-    florets.userData.noMirror = true
     florets.frustumCulled = false
     const m = new Matrix4()
     const ring = new Float32Array(N) // 0 centro .. 1 borde
@@ -91,22 +104,41 @@ export default function Capitulum({ crop, layout, quality }) {
     const rays = new InstancedMesh(rayGeo, rayMat, RAYS)
     rays.frustumCulled = false
 
-    // Brácteas verdes alrededor (cierran el botón y quedan atrás del disco)
-    const bractLen = R * 0.42
-    const bractGeo = new SphereGeometry(1, 8, 4)
-    bractGeo.scale(bractLen / 2, bractLen * 0.22, 0.0016)
-    bractGeo.translate(bractLen / 2, 0, 0)
-    const bractMat = applyWind(new MeshStandardMaterial({ color: BRACT.clone(), roughness: 0.65, side: DoubleSide }))
+    // Brácteas: lámina ovalada con punta, de largo 1 sobre +X (cada instancia la escala)
+    const bractGeo = new SphereGeometry(1, 10, 4)
+    const bp = bractGeo.attributes.position
+    for (let i = 0; i < bp.count; i++) {
+      const u = (bp.getX(i) + 1) / 2
+      bp.setY(i, bp.getY(i) * Math.pow(Math.sin(Math.PI * Math.min(u, 0.999)), 0.6) * (1 - 0.45 * u))
+    }
+    // ovada y ancha, con punta larga (las filas se superponen como escamas)
+    bractGeo.scale(0.5, 0.36, 0.014)
+    bractGeo.translate(0.5, 0, 0)
+    bractGeo.computeVertexNormals()
+    // Posición de cada bráctea sobre el dorso
+    const bractSlots = []
+    BRACT_ROWS.forEach(([n, phi, len], row) => {
+      for (let i = 0; i < n; i++) bractSlots.push({ row, phi, len: len * R, a: (i / n) * Math.PI * 2 + row * 0.16 })
+    })
+    const bractMat = applyWind(
+      new MeshStandardMaterial({ color: BRACT.clone(), roughness: 0.65, side: DoubleSide, emissive: BRACT.clone().multiplyScalar(0.25) }),
+    )
     const bracts = new InstancedMesh(bractGeo, bractMat, BRACTS)
     bracts.frustumCulled = false
 
     const neckGeo = new CylinderGeometry(layout.m.stemR * 0.5, layout.m.stemR * 0.55, NECK, hi ? 10 : 6, 1)
     neckGeo.translate(0, NECK / 2, 0)
+    // el cuello es la punta del tallo: mismo verde, que se seca con la planta
+    const neckGreen = new Color(crop.paleta.hoja).lerp(new Color('#d8e6a8'), 0.2)
+    const neckMat = applyWind(new MeshStandardMaterial({ color: neckGreen.clone(), roughness: 0.8 }))
 
     return {
-      discGeo, backMat, capGeo, capMat, floretGeo, floretMat, florets, ring,
-      rayGeo, rayMat, rays, bractGeo, bractMat, bracts, neckGeo, flor, grano,
-      tmp: { m: new Matrix4(), q: new Quaternion(), e: new Euler(), p: new Vector3(), s: new Vector3(), c: new Color() },
+      rimGeo, domeGeo, D, bractSlots, backMat, capGeo, capMat, floretGeo, floretMat, florets, ring,
+      rayGeo, rayMat, rays, bractGeo, bractMat, bracts, neckGeo, neckMat, neckGreen, flor, grano,
+      tmp: {
+        m: new Matrix4(), q: new Quaternion(), e: new Euler(), p: new Vector3(), s: new Vector3(), c: new Color(),
+        n: new Vector3(), x: new Vector3(), y: new Vector3(), z: new Vector3(),
+      },
       last: { open: -1, rays: -1, colors: '' },
     }
   }, [crop, layout, R, N, hi])
@@ -114,8 +146,8 @@ export default function Capitulum({ crop, layout, quality }) {
   useEffect(
     () => () => {
       const b = built
-      ;[b.discGeo, b.capGeo, b.floretGeo, b.rayGeo, b.bractGeo, b.neckGeo].forEach((x) => x.dispose())
-      ;[b.backMat, b.capMat, b.floretMat, b.rayMat, b.bractMat].forEach((x) => x.dispose())
+      ;[b.rimGeo, b.domeGeo, b.capGeo, b.floretGeo, b.rayGeo, b.bractGeo, b.neckGeo].forEach((x) => x.dispose())
+      ;[b.backMat, b.capMat, b.floretMat, b.rayMat, b.bractMat, b.neckMat].forEach((x) => x.dispose())
       ;[b.florets, b.rays, b.bracts].forEach((x) => x.dispose())
     },
     [built],
@@ -143,17 +175,29 @@ export default function Capitulum({ crop, layout, quality }) {
     const open = clamp01(cabeza)
     if (Math.abs(open - built.last.open) > 1e-4) {
       built.last.open = open
-      for (let i = 0; i < BRACTS; i++) {
-        const a = (i / BRACTS) * Math.PI * 2 + (i % 2) * 0.12
-        // de apuntar al frente y al centro (cerrado) a echarse hacia atrás del disco
-        const tilt = lerp(-1.8, 0.55, open) + (i % 2) * 0.12
-        t.e.set(0, tilt, a, 'ZYX')
-        t.q.setFromEuler(t.e)
-        t.p.set(Math.cos(a) * R * 0.9, Math.sin(a) * R * 0.9, -0.01)
-        t.s.setScalar(1)
-        t.m.compose(t.p, t.q, t.s)
+      const { D, bractSlots } = built
+      const Rd = R * 0.97
+      bractSlots.forEach((b, i) => {
+        const ca = Math.cos(b.a)
+        const sa = Math.sin(b.a)
+        const sp = Math.sin(b.phi)
+        const cp = Math.cos(b.phi)
+        // punto del dorso y su normal (elipsoide de radios Rd, Rd, D)
+        t.p.set(sp * ca * Rd, sp * sa * Rd, -RIM - cp * D)
+        t.n.set((sp * ca) / Rd, (sp * sa) / Rd, -cp / D).normalize()
+        if (b.row === 0) {
+          // fila del borde: cerrada sobre el botón (estrella) y abierta hacia afuera y atrás
+          t.x.set(-ca * 0.35, -sa * 0.35, 0.94).lerp(t.y.set(ca * 0.9, sa * 0.9, -0.44), open)
+        } else {
+          // filas de adentro: echadas sobre el dorso hacia el borde, con la punta apenas levantada
+          t.x.set(cp * ca * Rd, cp * sa * Rd, sp * D).normalize().addScaledVector(t.n, 0.3)
+        }
+        t.x.normalize()
+        t.z.copy(t.n).addScaledVector(t.x, -t.n.dot(t.x)).normalize()
+        t.y.crossVectors(t.z, t.x)
+        t.m.makeBasis(t.x, t.y, t.z).scale(t.s.setScalar(b.len)).setPosition(t.p)
         built.bracts.setMatrixAt(i, t.m)
-      }
+      })
       built.bracts.instanceMatrix.needsUpdate = true
     }
 
@@ -209,20 +253,27 @@ export default function Capitulum({ crop, layout, quality }) {
     const back = clamp01((grano - 0.4) / 0.6)
     built.backMat.color.copy(BRACT).lerp(BACK_YELLOW, back).lerp(BACK_BROWN, clamp01((madurez - 0.3) / 0.7))
     built.backMat.emissive.copy(built.backMat.color).multiplyScalar(0.25)
-    built.bractMat.color.copy(BRACT).lerp(BACK_BROWN, clamp01((madurez - 0.1) / 0.6))
+    // brácteas verdes hasta R7 (apenas amarillean) y marrones recién en la madurez
+    built.bractMat.color.copy(BRACT).lerp(BACK_YELLOW, 0.25 * back).lerp(BACK_BROWN, clamp01((madurez - 0.45) / 0.55))
+    built.bractMat.emissive.copy(built.bractMat.color).multiplyScalar(0.25)
+    built.neckMat.color.copy(built.neckGreen).lerp(BACK_BROWN, clamp01(madurez * 1.2 - 0.1))
   })
 
   return (
     <group rotation-y={layout.headAzimuth}>
       <group ref={bendRef}>
-        <mesh geometry={built.neckGeo} material={built.backMat} castShadow />
+        <mesh geometry={built.neckGeo} material={built.neckMat} castShadow />
         <group position-y={NECK} ref={faceRef}>
           <group ref={scaleRef}>
-            <mesh geometry={built.discGeo} material={built.backMat} castShadow />
-            <mesh geometry={built.capGeo} material={built.capMat} position-z={0.0005} />
-            <primitive object={built.florets} />
-            <primitive object={built.rays} />
-            <primitive object={built.bracts} />
+            {/* el cuello entra por el centro del dorso: el frente queda adelante */}
+            <group position-z={built.D + RIM}>
+              <mesh geometry={built.rimGeo} material={built.backMat} castShadow />
+              <mesh geometry={built.domeGeo} material={built.backMat} castShadow />
+              <mesh geometry={built.capGeo} material={built.capMat} position-z={0.0005} />
+              <primitive object={built.florets} />
+              <primitive object={built.rays} />
+              <primitive object={built.bracts} />
+            </group>
           </group>
         </group>
       </group>
