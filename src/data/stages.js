@@ -209,7 +209,12 @@ export function cameraFrame(i, crop, head, focus) {
     case 9: return { pos: [0.6 * H, 0.8 * H, 1.2 * H], look: [0, 0.75 * H, 0] }
     default: {
       const k = Math.max(H, 1)
-      return { pos: [6 * k, 3.5 * k, 9 * k], look: [0, 0.5 * H, -4] }
+      const look = [0, 0.5 * H, -4]
+      const far = [6 * k, 3.5 * k, 9 * k]
+      // Los cultivos de surco angosto (cereales de invierno y soja) se ven finos desde
+      // lejos: la cámara se acerca un 30 % hacia el mismo punto de mira.
+      const near = crop.surco < 0.5 ? 0.7 : 1
+      return { pos: far.map((v, j) => look[j] + (v - look[j]) * near), look }
     }
   }
 }

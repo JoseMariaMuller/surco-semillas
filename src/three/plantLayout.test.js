@@ -84,3 +84,17 @@ test('soja R1 (etapa 6): la cámara mira a la altura de los nudos en flor', () =
   const look = cameraFrame(6, CROPS.soja, L.headCenter, L.focus).look[1]
   assert.ok(look >= Math.min(...ys) - 0.02 && look <= Math.max(...ys) + 0.02, `mira a ${look}; flores entre ${Math.min(...ys)} y ${Math.max(...ys)}`)
 })
+
+test('1 ha: la cámara se acerca un 30 % en los cultivos de surco angosto', () => {
+  // distancia original de la consigna: (6, 3.5, 9) × max(H, 1) hacia (0, 0.5H, −4)
+  const ratio = (id) => {
+    const c = CROPS[id]
+    const L = buildLayout(c)
+    const f = cameraFrame(10, c, L.headCenter, L.focus)
+    const k = Math.max(c.H, 1)
+    const base = Math.hypot(6 * k, 3.5 * k - 0.5 * c.H, 9 * k + 4)
+    return Math.hypot(f.pos[0] - f.look[0], f.pos[1] - f.look[1], f.pos[2] - f.look[2]) / base
+  }
+  for (const id of ['trigo', 'cebada', 'avena', 'centeno', 'soja']) assert.ok(Math.abs(ratio(id) - 0.7) < 0.01, `${id}: ${ratio(id)}`)
+  for (const id of ['maiz', 'sorgo', 'girasol']) assert.ok(Math.abs(ratio(id) - 1) < 0.01, `${id}: ${ratio(id)}`)
+})
